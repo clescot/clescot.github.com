@@ -1,0 +1,311 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Web-Debug-Tag : Visualiser Facilement Les Variables Des Jsp Dans Son Navigateur | Le blog de Charles Lescot.</title>
+  <meta name="author" content="Charles Lescot">
+  
+  <meta name="description" content="Blog sur Java, le web, et les méthodes agiles.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Web-Debug-Tag : Visualiser Facilement Les Variables Des Jsp Dans Son Navigateur"/>
+  <meta property="og:site_name" content="Le blog de Charles Lescot."/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/blog/favicon.png" rel="icon">
+  <link rel="alternate" href="/blog/atom.xml" title="Le blog de Charles Lescot." type="application/atom+xml">
+  <link rel="stylesheet" href="/blog/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/blog/">Le blog de Charles Lescot.</a></h1>
+  <h2><a href="/blog/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/blog/">Home</a></li>
+    
+      <li><a href="/blog/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-05-02T22:15:00.000Z"><a href="/blog/2013/05/03/2013-05-03-web-debug-tag-visualiser-facilement-les-variables-disponibles-des-jsp-dans-son-navigateur/">03/05/13</a></time>
+      
+      
+  
+    <h1 class="title">Web-Debug-Tag : Visualiser Facilement Les Variables Des Jsp Dans Son Navigateur</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="Un-besoin-de-communication"><a href="#Un-besoin-de-communication" class="headerlink" title="Un besoin de communication"></a>Un besoin de communication</h1><p>Lors de mes missions, j’ai pu observer différentes organisations d’équipe de développement d’applications web. </p>
+<p>Dans certains cas, une sous-équipe est dédiée uniquement à la réalisation de la couche graphique (<em>le “front”</em>), et une autre à la partie serveur (<em>le “back”</em>). Ceci peut engendrer une “frontière” technique, une opacité quant aux variables disponibles dans les JSP fournies par les développeurs “back”.</p>
+<p>Afin d’améliorer <strong>la communication entre les équipes</strong>, <a href="https://github.com/jeremyGoupil" target="_blank" rel="external">Jérémy Goupil</a> et moi avons codé une taglib appelée <a href="https://github.com/figarocms/web-debug-tag" target="_blank" rel="external">web-debug-tag</a>, permettant de <strong>rendre visible</strong> aux développeurs front ces variables.</p>
+<p>Je vous présente donc dans cet article, son principe, son installation, et son usage, d’abord dans une application web simple, puis dans un cas plus complexe.</p>
+<h1 id="Web-debug-tag-kesako"><a href="#Web-debug-tag-kesako" class="headerlink" title="Web-debug-tag, kesako ?"></a>Web-debug-tag, kesako ?</h1><p>Cette taglib <strong>sérialise</strong> dans la réponse du serveur, au format <strong>JSON</strong>, les variables et leurs valeurs, qu’elles soient dans les scopes <em>page</em>, <em>request</em>, <em>session</em> ou <em>application</em>. </p>
+<p>Les valeurs des variables peuvent être aussi bien des chaînes de caractères que des arbres d’objets, le tag utilisant la librairie <a href="https://github.com/FasterXML/jackson-core" target="_blank" rel="external">Jackson</a> pour sérialiser le tout. Seuls les champs publics des objets, ou ceux ayant des accesseurs publics seront sérialisés.</p>
+<p>De plus, une fois ces objets java sérialisés en JSON, du code client met dans la console javascript ce résultat pour être facilement visualisé dans le navigateur.</p>
+<h2 id="Installation"><a href="#Installation" class="headerlink" title="Installation"></a>Installation</h2><p>L’installation de cette librairie, pour les projets sous maven, nécessite l’ajout dans votre fichier <code>pom.xml</code> de la section suivante : </p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;fr.figarocms&lt;/group&gt;
+    &lt;artifactId&gt;web-debug-tag&lt;/artifactId&gt;
+    &lt;version&gt;1.6&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre><p>Cet ajout permettra à votre projet d’inclure dans votre fichier <code>war</code>, le jar de la taglib.</p>
+<p>Une fois installé, vous pouvez maintenant inclure dans vos JSP la directive suivante:</p>
+<pre><code>&lt;%@ taglib prefix=&quot;debug&quot; uri=&quot;https://github.com/figarocms/web-debug-tag&quot;%&gt;
+</code></pre><p>suivi par le tag en lui-même:</p>
+<pre><code>&lt;debug:debugModel/&gt;
+</code></pre><p>SI votre application comporte de nombreuses pages avec des parties communes, vous utilisez certainement un moteur de template. Placez donc cette directive dans un template global pour qu’il s’applique à toutes les JSP de l’application.</p>
+<h2 id="A-utiliser-uniquement-pour-le-developpement"><a href="#A-utiliser-uniquement-pour-le-developpement" class="headerlink" title="À utiliser uniquement pour le développement"></a>À utiliser uniquement pour le développement</h2><p>Cette librairie exposant toutes les variables de l’application côté navigateur, celle-ci n’est pas activée par défaut ; {“l’activation du web-debug-tag en production est totalement déconseillée”}, principalement pour des raisons de sécurité.</p>
+<p>Pour l’activer, il faut donc mettre dans la ligne de commande lançant votre serveur d’applications le paramètre suivant:</p>
+<pre><code>-Ddebug.jsp=true
+</code></pre><p>Un message d’avertissement s’affichera néanmoins à chaque démarrage pour vous rappeler que ce n’est qu’une librairie dédiée aux environnements de développement.</p>
+<h2 id="Une-application-web-d’exemple"><a href="#Une-application-web-d’exemple" class="headerlink" title="Une application web d’exemple"></a>Une application web d’exemple</h2><p>J’ai codé une application basique afin d’illustrer l’usage du web-debug-tag.</p>
+<p>Pour tester le résultat, vous pouvez cloner le repository github par la commande suivante : </p>
+<pre><code>git clone https://github.com/clescot/web-debug-tag-example
+</code></pre><p>Dans le répertoire <em>web-debug-tag-example</em> nouvellement crée, vous pouvez lancer la commande maven suivante pour lancer un serveur jetty:</p>
+<pre><code>mvn org.eclipse.jetty:jetty-maven-plugin:9.0.2.v20130417:run-exploded
+</code></pre><h2 id="Rendu"><a href="#Rendu" class="headerlink" title="Rendu"></a>Rendu</h2><p>Le tag génère du code, qui met dans l’objet javascript <code>console</code> la grappe d’objets JSON générée.</p>
+<p>voici un exemple de rendu sous ce même jetty:</p>
+{% img right /images/capture_web-debug-tag.png 1855 1056  les variables jsp apparaissent dans l'onglet console de firebug  %}
+<p>On peut voir dans cette capture d’écran, la sérialisation d’éléments présents dans les différents scopes de <a href="https://github.com/clescot/web-debug-tag-example" target="_blank" rel="external">l’application web créée pour l’article</a>, via la console <a href="https://getfirebug.com" target="_blank" rel="external">Firebug</a> sous Firefox. D’autres navigateurs tels Chrome permettent de visualiser aussi la sortie de l’objet console.</p>
+<p>On pourra noter dans cette capture, la sérialisation d’objets dans les différents scopes, que les objets soient simples (chaînes de caractères, entiers), ou complexes (objets contenus dans d’autres objets). </p>
+<h2 id="Exclusion-de-certaines-classes-non-serialisables"><a href="#Exclusion-de-certaines-classes-non-serialisables" class="headerlink" title="Exclusion de certaines classes non sérialisables"></a>Exclusion de certaines classes non sérialisables</h2><p>Certaines classes particulières, ne sont pas sérialisables comme des proxies Spring, Sitemesh ou Hibernate, sauf à utiliser <a href="https://github.com/FasterXML/jackson-module-hibernate" target="_blank" rel="external">des modules Jackson tierces</a>. Ceci se traduit par une <a href="http://fasterxml.github.io/jackson-databind/javadoc/2.2.0/com/fasterxml/jackson/databind/JsonMappingException.html" target="_blank" rel="external">JsonMappingException</a> levée par <a href="https://github.com/FasterXML/jackson-core" target="_blank" rel="external">Jackson</a>, qui englobe des StackOverflowError, syndrôme de la boucle infinie. </p>
+<p>Il est donc possible, via l’utilisation d’un paramètre de contexte dans le fichier <code>web.xml</code>, de définir les classes à exclure de la sérialisation via <a href="http://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html" target="_blank" rel="external">une expression régulière</a>. A noter que ces classes peuvent être présentes à différents niveaux de la grappe d’objets à sérialiser.</p>
+<p>voici un exemple de configuration d’exclusion évitant des problèmes liés aux classes de Tomcat 7, Jetty 9, sitemesh et Spring:</p>
+<pre><code>&lt;context-param&gt;
+    &lt;param-name&gt;webdebug.excludes&lt;/param-name&gt;
+    &lt;param-value&gt;org.springframework.*,__spring.*,__sitemesh.*,org.apache.jasper.*,org.apache.catalina.*,org.eclipse.jetty.webapp.Context,org.eclipse.jetty.server.*,org.eclipse.jetty.servlet.*,org.eclipse.jetty.webapp.*&lt;/param-value&gt;
+&lt;/context-param&gt;
+</code></pre><h2 id="Utilisation-du-web-debug-tag-dans-une-application-web-plus-complexe"><a href="#Utilisation-du-web-debug-tag-dans-une-application-web-plus-complexe" class="headerlink" title="Utilisation du web-debug-tag dans une application web plus complexe"></a>Utilisation du web-debug-tag dans une application web plus complexe</h2><p>l’équipe du framework Spring, fournit <a href="https://github.com/SpringSource/spring-petclinic" target="_blank" rel="external">une application web exemple</a> à laquelle j’ai ajouté, <a href="https://github.com/clescot/spring-petclinic" target="_blank" rel="external">dans un fork du repository github</a>, le web-debug-tag, pour tester une situation plus complexe.</p>
+<p>voici sa configuration dans le <code>web.xml</code>, créée après plusieurs essais permettant d’éviter des JsonMappingException :</p>
+<pre><code> &lt;context-param&gt;
+    &lt;param-name&gt;webdebug.excludes&lt;/param-name&gt;
+    &lt;param-value&gt;org.springframework.web.context.support.ServletContextResourcePatternResolver,org.apache.naming.*,
+        org.springframework.aop.*,net.sf.ehcache.DiskStorePathManager,org.springframework.context.support.*,__spring.*,__sitemesh.*,org.apache.jasper.*,org.apache.catalina.*,org.eclipse.jetty.webapp.Context,net.sf.ehcache.CacheManager,org.apache.commons.dbcp.BasicDataSource,org.springframework.beans.factory.support.*,org.eclipse.jetty.server.*,org.eclipse.jetty.servlet.*,org.eclipse.jetty.webapp.*&lt;/param-value&gt;
+&lt;/context-param&gt;
+</code></pre><p>Cette configuration pourrait être affinée si nécessaire, afin de voir plus d’informations liées à Spring (les développeurs web en ont-ils besoin ?).</p>
+<p>voici un exemple de rendu des variables via le web-debug-tag : </p>
+<img src="/blog/images/Capture-spring-pet-clinic.png" class="right" width="1615" height="1026" title="les variables jsp apparaissent dans l" alt="onglet console de firebug">
+<h1 id="conclusion"><a href="#conclusion" class="headerlink" title="conclusion"></a>conclusion</h1><p>Je vous ai présenté l’installation et l’usage du web-debug-tag. Cet outil a eu un retour positif des développeurs “front” chez mon client.</p>
+<p>J’espère que ce tag  vous sera utile, permettant une meilleure communication entre les parties “front” et “back”, si vos équipes sont structurées ainsi.</p>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/blog/blog/categories/debug/">debug</a>, <a href="/blog/blog/categories/debug/jsp/">jsp</a>, <a href="/blog/blog/categories/debug/jsp/variables/">variables</a>, <a href="/blog/blog/categories/debug/jsp/variables/communication/">communication</a>, <a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/">JSON</a>, <a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/">web</a>, <a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/">java</a>, <a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/tag/">tag</a>
+  </div>
+
+        
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Commentaires</h1>
+
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Recherche">
+    <input type="hidden" name="q" value="site:clescot.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Catégories</h3>
+  <ul class="entry">
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/">JDBC</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JEE/">JEE</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/">JSON</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/">TDD</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/">big data</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/">cli</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/">communication</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/communication/">communication</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/">concurrence</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/">debug</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/">debug</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/">devops</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/git/">git</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/guice/">guice</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/">hook</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/">intégration continue</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/jersey/">jersey</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/">jsp</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/">kafka</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/">kafkacat</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/">logback</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/">logs</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/">mesure</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/">multithread</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/">organisation</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/outil/">outil</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/">parallèle</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/">performance</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/">productivité</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/">push</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/">scaleway</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/">spring</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/">swarm mode</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/tag/">tag</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/">tempus-fugit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/">terraform</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/">testng</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/testrule/">testrule</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/tests/">tests</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/">thread-safe</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/ubuntu/">ubuntu</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/">variables</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/">web</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/">web</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+
+  
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 Charles Lescot
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/blog/js/jquery.imagesloaded.min.js"></script>
+<script src="/blog/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

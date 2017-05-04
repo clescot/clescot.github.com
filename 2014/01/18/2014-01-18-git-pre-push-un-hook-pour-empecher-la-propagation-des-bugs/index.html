@@ -1,0 +1,296 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Git Pre-Push : Un Hook Pour Empêcher La Propagation Des Bugs | Le blog de Charles Lescot.</title>
+  <meta name="author" content="Charles Lescot">
+  
+  <meta name="description" content="Blog sur Java, le web, et les méthodes agiles.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Git Pre-Push : Un Hook Pour Empêcher La Propagation Des Bugs"/>
+  <meta property="og:site_name" content="Le blog de Charles Lescot."/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/blog/favicon.png" rel="icon">
+  <link rel="alternate" href="/blog/atom.xml" title="Le blog de Charles Lescot." type="application/atom+xml">
+  <link rel="stylesheet" href="/blog/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/blog/">Le blog de Charles Lescot.</a></h1>
+  <h2><a href="/blog/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/blog/">Home</a></li>
+    
+      <li><a href="/blog/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2014-01-18T15:05:00.000Z"><a href="/blog/2014/01/18/2014-01-18-git-pre-push-un-hook-pour-empecher-la-propagation-des-bugs/">18/01/14</a></time>
+      
+      
+  
+    <h1 class="title">Git Pre-Push : Un Hook Pour Empêcher La Propagation Des Bugs</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="Etat-des-lieux"><a href="#Etat-des-lieux" class="headerlink" title="Etat des lieux"></a>Etat des lieux</h1><p>Les applications développées comportent inévitablement des bugs.<br>L’erreur étant humaine, cet état de fait ne surprend plus grand monde.</p>
+<p>Pour parer à cette situation, sont développés en parallèle toutes sortes de tests, dont les <em>tests unitaires</em>. Nécessaires mais non suffisants, ceux-ci sont généralement les plus rapides à s’exécuter, permettant d’avoir un <strong>feeback rapide</strong>.<br>Leur intérêt n’est plus à démontrer.</p>
+<p>Il est navrant en 2014, que des bugs détectés en amont par des tests se propagent.</p>
+<h1 id="Une-verification-par-une-chaine-d’integration-continue-centralisee"><a href="#Une-verification-par-une-chaine-d’integration-continue-centralisee" class="headerlink" title="Une vérification par une chaîne d’intégration continue centralisée ?"></a>Une vérification par une chaîne d’intégration continue centralisée ?</h1><p>Le premier réflexe pour régler ce problème, est d’utiliser les outils déjà en place. Un des outils qui s’est généralisé, est une chaîne d’intégration continue centralisée, type <a href="http://jenkins-ci.org" target="_blank" rel="external">jenkins</a>. Cela permet de détecter un bug quand l’exécution des tests unitaires du build échoue.</p>
+<p>Cette solution permet d’éviter de propager des bugs en production, l’équipe ne livrant que si le traitement sur la chaîne d’intégration continue s’exécute avec succès.</p>
+<p>Néanmoins, <strong>la vérification par la chaîne d’intégration centralisée ne prévient pas la propagation du bug aux autres membres de l’équipe qui travaillent sur la même branche”</strong>, car le code a été poussé sur le repository distant. Les autres développeurs et jenkins se synchronisent ensuite sur ce même repository déjà buggé.</p>
+<p>Le <em>feedack</em> vers l’équipe est donc <strong>trop tardif</strong> !<br>Essayons de trouver une autre approche, permettant d’avoir un feedback beaucoup plus court.</p>
+<h1 id="Une-verification-par-une-chaine-d’integration-continue-decentralisee"><a href="#Une-verification-par-une-chaine-d’integration-continue-decentralisee" class="headerlink" title="Une vérification par une chaîne d’intégration continue décentralisée !"></a>Une vérification par une chaîne d’intégration continue décentralisée !</h1><p>Le but de cette approche, est de contrôler <strong>au plus tôt</strong> le code, avant de le propager au sein de l’équipe. Ce contrôle doit s’effectuer avant tout partage.</p>
+<h2 id="Un-hook-sur-push"><a href="#Un-hook-sur-push" class="headerlink" title="Un hook sur push"></a>Un hook sur push</h2><p>J’utilise depuis quelques semaines, une solution chez un client permettant d’exécuter les tests unitaires via Maven (<code>mvn clean test</code>) lors de la commande <code>git push</code>.</p>
+<p>Depuis la version <em>1.8.2</em> de git  apparue en mars 2013, le déclenchement d’un hook est maintenant possible sur un push.<br>Un Hook (crochet en français ?), est un moyen d’exécuter un script personnalisé à certains moments (commit, push, merge, etc..). Il s’exécute avant l’action en question, et conditionne l’exécution de celle-ci.</p>
+<p>Au passage, vous pouvez connaître votre version de git en exécutant la commande <code>git --version</code>.</p>
+<p>Les hooks sont situés dans le sous-répertoire <code>hooks</code> du répertoire caché <code>.git</code> de votre repository. Des exemples de hook, finissant par <code>sample</code> sont déjà présents.</p>
+<p>J’utilise le hook défini par <a href="http://blog.ittybittyapps.com/blog/2013/09/03/git-pre-push/" target="_blank" rel="external">itty bitty labs</a>, en exécutant les tests unitaires via maven  : </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#!/bin/bash </span></div><div class="line"></div><div class="line">CMD=<span class="string">"mvn clean test"</span> <span class="comment"># Command that runs your tests</span></div><div class="line"></div><div class="line"><span class="comment"># Check if we actually have commits to push</span></div><div class="line">commits=`git <span class="built_in">log</span> @&#123;u&#125;..`</div><div class="line"><span class="keyword">if</span> [ -z <span class="string">"<span class="variable">$commits</span>"</span> ]; <span class="keyword">then</span></div><div class="line">    <span class="built_in">exit</span> 0</div><div class="line"><span class="keyword">fi</span></div><div class="line"></div><div class="line">current_branch=$(git symbolic-ref HEAD | sed <span class="_">-e</span> <span class="string">'s,.*/\(.*\),\1,'</span>)</div><div class="line"></div><div class="line"><span class="variable">$CMD</span></div><div class="line">RESULT=$?</div><div class="line"><span class="keyword">if</span> [ <span class="variable">$RESULT</span> <span class="_">-ne</span> 0 ]; <span class="keyword">then</span> </div><div class="line">       <span class="built_in">echo</span> <span class="string">"failed <span class="variable">$CMD</span>"</span></div><div class="line">       <span class="built_in">exit</span> 1</div><div class="line"><span class="keyword">fi</span></div><div class="line"></div><div class="line"><span class="built_in">exit</span> 0</div></pre></td></tr></table></figure>
+<p>Placez ce script intitulé <code>pre-push</code> dans le répertoire <code>hooks</code>.</p>
+<p>Ayant des tests d’intégration qui peuvent être longs, seuls les tests unitaires sont exécutés à chaque push.<br>Ainsi, {“le Hook sur push permet d’éviter la propagation des bugs vers les autres membres de l’équipe, mais bloque le développement lors de son exécution”}.</p>
+<p>Pour résumer, cette solution : </p>
+<ul>
+<li>ne s’enclenche que sur un git push</li>
+<li>est bloquante</li>
+</ul>
+<p>Elle s’adapte bien à mon usage, car il peut m’arriver d’effectuer des commit sur une branche, en cassant des tests unitaires de façon transitoire lors de refactorings. Néanmoins, il existe des situations où il est préférable de désactiver un hook.</p>
+<p>Git permet cela sur <a href="http://git-scm.com/book/fr/Personnalisation-de-Git-Crochets-Git" target="_blank" rel="external">tous les hooks git</a> via l’option <code>no-verify</code> : </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">git push origin mabranche --no-verify</div></pre></td></tr></table></figure>
+<h2 id="Un-hook-sur-commit-avec-un-repository-local-cache"><a href="#Un-hook-sur-commit-avec-un-repository-local-cache" class="headerlink" title="Un hook sur commit avec un repository local caché"></a>Un hook sur commit avec un repository local caché</h2><p><a href="http://www.leszindeps.fr/p/David/Gageot/8aa5af7b3ad8ac1d013ad9ae27a60000" target="_blank" rel="external">David Gageot</a>, proposait déjà cette approche de <a href="http://blog.javabien.net/2009/12/01/serverless-ci-with-git/" target="_blank" rel="external">chaîne d’intégration continue décentralisée</a> sur son blog en 2009, mais via une autre solution. </p>
+<p>Sa solution est à base de hook git sur un commit. Ce hook clone le repository local dans un répertoire caché , et exécute les tests avant de valider le commit. En cas de succès, il propage le code sur le repository local initial. </p>
+<p><strong>Le hook sur commit permet une détection des bugs très tôt, et ne perturbe pas la fluidité du développement</strong>.</p>
+<p>Pour résumer, cette solution : </p>
+<ul>
+<li>est basée sur un hook déclenché sur un commit</li>
+<li>est non-bloquante</li>
+</ul>
+<p>Ainsi, elle permet de ne pas attendre le résultat des tests pour continuer à développer.</p>
+<p>La solution de David Gageot, permet un contrôle <strong>plus tôt</strong> par rapport au hook sur git push, avec pour contrepartie la nécessité d’effectuer des commits plus rigoureux.</p>
+<p>Il ne faut donc pas sortir des clous lors de chaque commit, quitte à exceptionellement désactiver le hook via l’option <code>no-verify</code> citée plus haut (option valide sur tous les hooks).</p>
+<p>Effectivement, les commits sous git étant fréquents, il pourrait être désagréable d’être bloqué en attendant le résultat de tests unitaires de nombreuses fois par jour. La solution du clone du repository local dans un répertoire caché est une solution élégante, car elle permet de ne pas être bloqué dans ses développements.</p>
+<h1 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h1><p>Si vous êtes très rigoureux, utilisez donc la solution proposée par David Gageot. Si vous n’êtes pas en situation de le faire sur votre projet, peut-être que l’approche <em>hook sur git push</em> répondra à votre besoin.<br>J’espère qu’un de ces hooks vous permettra d’éviter la propagation de bugs vers vos collègues.</p>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/blog/blog/categories/git/">git</a>, <a href="/blog/blog/categories/git/productivite/">productivité</a>, <a href="/blog/blog/categories/git/productivite/hook/">hook</a>, <a href="/blog/blog/categories/git/productivite/hook/push/">push</a>, <a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/">intégration continue</a>, <a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/">TDD</a>, <a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/tests/">tests</a>
+  </div>
+
+        
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Commentaires</h1>
+
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Recherche">
+    <input type="hidden" name="q" value="site:clescot.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Catégories</h3>
+  <ul class="entry">
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/">JDBC</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JEE/">JEE</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/">JSON</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/">TDD</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/">big data</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/">cli</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/">communication</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/communication/">communication</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/">concurrence</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/">debug</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/">debug</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/">devops</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/git/">git</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/guice/">guice</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/">hook</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/">intégration continue</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/jersey/">jersey</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/">jsp</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/">kafka</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/">kafkacat</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/">logback</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/">logs</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/">mesure</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/">multithread</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/">organisation</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/outil/">outil</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/">parallèle</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/">performance</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/">productivité</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/">push</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/">scaleway</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/">spring</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/">swarm mode</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/tag/">tag</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/">tempus-fugit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/">terraform</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/">testng</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/testrule/">testrule</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/tests/">tests</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/">thread-safe</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/ubuntu/">ubuntu</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/">variables</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/">web</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/">web</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+
+  
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 Charles Lescot
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/blog/js/jquery.imagesloaded.min.js"></script>
+<script src="/blog/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

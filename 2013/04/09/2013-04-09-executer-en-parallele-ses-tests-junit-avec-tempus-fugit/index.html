@@ -1,0 +1,318 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Exécuter en Parallèle Ses Tests Junit Avec Tempus-Fugit | Le blog de Charles Lescot.</title>
+  <meta name="author" content="Charles Lescot">
+  
+  <meta name="description" content="Blog sur Java, le web, et les méthodes agiles.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Exécuter en Parallèle Ses Tests Junit Avec Tempus-Fugit"/>
+  <meta property="og:site_name" content="Le blog de Charles Lescot."/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/blog/favicon.png" rel="icon">
+  <link rel="alternate" href="/blog/atom.xml" title="Le blog de Charles Lescot." type="application/atom+xml">
+  <link rel="stylesheet" href="/blog/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/blog/">Le blog de Charles Lescot.</a></h1>
+  <h2><a href="/blog/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/blog/">Home</a></li>
+    
+      <li><a href="/blog/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-04-09T14:00:00.000Z"><a href="/blog/2013/04/09/2013-04-09-executer-en-parallele-ses-tests-junit-avec-tempus-fugit/">09/04/13</a></time>
+      
+      
+  
+    <h1 class="title">Exécuter en Parallèle Ses Tests Junit Avec Tempus-Fugit</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h2 id="…-ou-comment-tester-si-son-code-est-thread-safe"><a href="#…-ou-comment-tester-si-son-code-est-thread-safe" class="headerlink" title="… ou comment tester si son code est thread-safe."></a>… ou comment tester si son code est <strong>thread-safe</strong>.</h2><h1 id="Le-probleme"><a href="#Le-probleme" class="headerlink" title="Le problème"></a>Le problème</h1><p>Lors du développement de services exposés sur internet (services web, servlets etc… ), il est primordial de s’assurer de la nature <strong>thread-safe</strong> du code.</p>
+<p>Des problèmes d’écriture et lecture de données concurrentes, provoquant des erreurs difficilement reproductibles peuvent<br>survenir : un service sous forte charge pourrait se comporter de façon erronée sous forte charge. en bref, <strong>le code est hors de contrôle</strong>. </p>
+<h1 id="Une-solution"><a href="#Une-solution" class="headerlink" title="Une solution"></a>Une solution</h1><p>L’approche habituelle pour détecter cette faiblesse est de favoriser la reproduction du problème par <strong>l’exécution concurrente</strong> (via plusieurs threads) et <strong>répétée</strong> du code.</p>
+<h2 id="Concurrence-et-repetition-via-Tempus-fugit"><a href="#Concurrence-et-repetition-via-Tempus-fugit" class="headerlink" title="Concurrence et répétition via Tempus-fugit"></a>Concurrence et répétition via Tempus-fugit</h2><p>Je vous propose d’exécuter en parallèle le code via des tests unitaires <strong>[Junit]</strong> et la librairie <em>[tempus-fugit]</em>.</p>
+<p>Nous testerons pour cet article, la nature <strong>thread-safe</strong> d’un service REST développé avec Jersey. Ces tests mettront en oeuvre les annotations <code>@Concurrent</code>, <code>Repeating</code>, <code>@Intermittent</code> et le runner <code>ConcurrentTestRunner</code>.</p>
+<p>Les exemples de code sont présent sur <a href="https://github.com/clescot/tempus-fugit-example" target="_blank" rel="external">un repository github dédié</a>.</p>
+<h2 id="Un-exemple-de-service-web"><a href="#Un-exemple-de-service-web" class="headerlink" title="Un exemple de service web"></a>Un exemple de service web</h2><p>Voici un service web <em>[JAX-RS]</em>, qui présente deux points d’entrée permettant :</p>
+<ul>
+<li>d’ajouter un élément à une collection </li>
+<li>d’effacer le contenu de la collection</li>
+</ul>
+<p>Le code ci-dessous, a pour seul but d’illustrer les problèmes de concurrence d’accès. Ici, le problème vient de l’utilisation du champ de classe <code>coll</code>, sans synchronisation. L’accès à un champ de la classe, pour des services web, est la plupart du temps la partie critique du code à contrôler, que ce champ soit un champ d’instance ou un champ statique. Ainsi, il est nécessaire de garantir un accès unique au champ via du code synchronisé, ou de déclarer <code>volatile</code> le champ pour éviter que java ne cache sa valeur pour chaque thread.<br>En bref, “utilisez le moins possible de champs d’instance pour des services web.”</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"></div><div class="line"><span class="meta">@Path</span>(<span class="string">"/test1"</span>)</div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FooBar</span> </span>&#123;</div><div class="line"></div><div class="line"> 	  <span class="keyword">private</span> <span class="keyword">static</span> Collection coll = Lists.newArrayList();</div><div class="line"></div><div class="line"></div><div class="line">	   <span class="meta">@GET</span></div><div class="line">	   <span class="meta">@Path</span>(<span class="string">"/path1"</span>)</div><div class="line"> 	  <span class="function"><span class="keyword">public</span> Response <span class="title">test</span><span class="params">(@QueryParam(<span class="string">"value"</span>)</span> String value) <span class="keyword">throws</span> InterruptedException </span>&#123;</div><div class="line"> 	      coll.add(value);</div><div class="line"> 	      <span class="keyword">int</span> size = coll.size();</div><div class="line"> 	      <span class="keyword">return</span> Response.ok(<span class="string">""</span>+size).build();</div><div class="line"></div><div class="line">	   &#125;</div><div class="line"></div><div class="line"> 	  <span class="meta">@GET</span></div><div class="line"> 	  <span class="meta">@Path</span>(<span class="string">"/clear"</span>)</div><div class="line"> 	  <span class="function"><span class="keyword">public</span> Response <span class="title">test2</span><span class="params">(@QueryParam(<span class="string">"value"</span>)</span> String value)</span>&#123;</div><div class="line">	       coll.clear();</div><div class="line">	       <span class="keyword">return</span> Response.ok(<span class="string">"ok"</span>).build();</div><div class="line"> 	  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h1 id="L’execution-parallele"><a href="#L’execution-parallele" class="headerlink" title="L’exécution parallèle"></a>L’exécution parallèle</h1><p>Comme indiqué précédemment, l’exécution parallèle est une des contraintes à imposer  au code pour favoriser l’émergeance du problème.</p>
+<p>La librairie <em>tempus-fugit</em> nous propose deux mécanismes pour exécuter du code en parallèle :</p>
+<ul>
+<li>l’annotation <code>@Concurrent</code></li>
+<li>le runner <code>ConcurrentTestRunner</code></li>
+</ul>
+<h2 id="L’annotation-Concurrent"><a href="#L’annotation-Concurrent" class="headerlink" title="L’annotation @Concurrent"></a>L’annotation <code>@Concurrent</code></h2><p>La librairie <em>[Tempus-Fugit]</em>, fournit une <em>TestRule</em> , intitulée <code>ConcurrentRule</code>, qui s’active lorsque l’annotation <code>@Concurrent</code> est présente.</p>
+<p><code>&quot;L&#39;annotation @Concurrent permet d&#39;exécuter une même méthode de test de façon concurrente sur plusieurs threads.&quot;</code></p>
+<p>A noter que les <code>TestRule</code> étaient anciennement appelées <code>MethodRule</code> jusqu’à [<em>Junit</em>] 4.8.</p>
+<p>Les deux tests ci-dessous permettent de voir l’intérêt de cette <em>TestRule</em> :</p>
+<ul>
+<li>le premier test ne contient pas l’annotation <code>@Concurrent</code>. Il n’est donc exécuté qu’une seule fois, et s’exécute avec succès. Le non support d’une exécution concurrente <strong>n’est donc pas détecté</strong>.</li>
+<li>le second test est identique au premier, mais contient l’annotation <code>@Concurrent</code>. Ce Test est exécuté deux fois(<code>@concurrent(count=2)</code>, via deux threads distincts. Ce second test <strong>permet de détecter</strong> le non-support du code d’une exécution multi-threadée, notamment à cause de l’utilisation du champ de classe <code>coll</code>.</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MultiThreadTest</span> <span class="keyword">extends</span> <span class="title">WebRunner</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Logger LOGGER = LoggerFactory.getLogger(MultiThreadTest.class);</div><div class="line"></div><div class="line"> 	    <span class="meta">@Rule</span></div><div class="line">    <span class="keyword">public</span> ConcurrentRule concurrentRule = <span class="keyword">new</span> ConcurrentRule();</div><div class="line"></div><div class="line"> </div><div class="line">    <span class="keyword">private</span> WebResource webResource1 = resource().path(<span class="string">"/test1/path1"</span>).queryParam(<span class="string">"value"</span>, <span class="string">"4"</span>);</div><div class="line"></div><div class="line">    <span class="meta">@Test</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testResources_without_concurrent_annotation</span><span class="params">()</span> </span>&#123;</div><div class="line"></div><div class="line">        <span class="keyword">for</span> (<span class="keyword">long</span> size = <span class="number">1</span>; size &lt; <span class="number">10</span>; size++) &#123;</div><div class="line">            assertThat(Long.parseLong(call(webResource1)), is(size));</div><div class="line">        &#125;</div><div class="line">	       WebResource webResource2 = resource().path(<span class="string">"/test1/clear"</span>);</div><div class="line">        call(webResource2);</div><div class="line"></div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Test</span></div><div class="line">    <span class="meta">@Concurrent</span>(count = <span class="number">2</span>)</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testResources_with_concurrent_annotation</span><span class="params">()</span> </span>&#123;</div><div class="line"></div><div class="line">        <span class="keyword">for</span> (<span class="keyword">long</span> size = <span class="number">1</span>; size &lt; <span class="number">10</span>; size++) &#123;</div><div class="line">            assertThat(Long.parseLong(call(webResource1)), is(size));</div><div class="line">        &#125;</div><div class="line"> 	      WebResource webResource2 = resource().path(<span class="string">"/test1/clear"</span>);</div><div class="line">        call(webResource2);</div><div class="line"></div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">private</span> String <span class="title">call</span><span class="params">(<span class="keyword">final</span> WebResource webResource)</span> </span>&#123;</div><div class="line"></div><div class="line">        String response = <span class="keyword">null</span>;</div><div class="line">        <span class="keyword">try</span> &#123;</div><div class="line"> 	          response = webResource.get(String.class);</div><div class="line">   	        assertThat(<span class="string">"path ="</span> + webResource.getURI() + <span class="string">"response="</span> + response, !response.isEmpty(), is(<span class="keyword">true</span>));</div><div class="line">	           LOGGER.info(<span class="string">"response="</span> + response);</div><div class="line"> 	      &#125; <span class="keyword">catch</span> (UniformInterfaceException t) &#123;</div><div class="line">  	         Assert.fail(t.getMessage());</div><div class="line">  	         LOGGER.error(<span class="string">"erreur message="</span> + t.getMessage());</div><div class="line">            LOGGER.error(<span class="string">"erreur réponse="</span> + t.getResponse());</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="keyword">return</span> response;</div><div class="line"></div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h2 id="Le-runner-ConcurrentTestRunner"><a href="#Le-runner-ConcurrentTestRunner" class="headerlink" title="Le runner ConcurrentTestRunner"></a>Le runner <code>ConcurrentTestRunner</code></h2><p>A l’instar de l’annotation <code>@Concurrent</code>, un runner Junit permet d’exécuter l’ensemble des tests d’une classe chacun dans un Thread.<br>Ainsi, la classe de test suivante comporte 3 méthodes de test : 3 threads seront donc crées pour exécuter dans chacun d’eux une méthode de test en parallèle.</p>
+<p>Le léger avantage de cette voie est la <strong>simplicité</strong> : il sufit de déclarer le runner pour que toutes les méthodes soient exécutés en parallèle ; pas besoin de déclarer la TestRule et d’annoter chaque test. </p>
+<p>Les deux principaux inconvénients sont le <strong>manque de flexibilité</strong> car on ne peut spécifier qu’un seul runner Junit pour une classe de test, et <strong>le nombre de threads par méthode de test est fixe</strong> (1 thread par test).</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="meta">@RunWith</span>(ConcurrentTestRunner.class)</div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ConcurrentTest</span> <span class="keyword">extends</span> <span class="title">WebRunner</span></span>&#123;</div><div class="line"></div><div class="line"></div><div class="line">        <span class="keyword">private</span> <span class="keyword">static</span> Logger LOGGER = LoggerFactory.getLogger(MultiThreadTest.class);</div><div class="line"></div><div class="line">        <span class="keyword">private</span> WebResource webResource1 = resource().path(<span class="string">"/test1/path1"</span>).queryParam(<span class="string">"value"</span>, <span class="string">"4"</span>);</div><div class="line"></div><div class="line">        <span class="meta">@Test</span></div><div class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">first_test</span><span class="params">()</span> </span>&#123;</div><div class="line"></div><div class="line">            <span class="keyword">for</span> (<span class="keyword">long</span> size = <span class="number">1</span>; size &lt; <span class="number">10</span>; size++) &#123;</div><div class="line">                assertThat(Long.parseLong(call(webResource1)), is(size));</div><div class="line">            &#125;</div><div class="line">            WebResource webResource2 = resource().path(<span class="string">"/test1/clear"</span>);</div><div class="line">            call(webResource2);</div><div class="line"></div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="meta">@Test</span></div><div class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">second_test</span><span class="params">()</span> </span>&#123;</div><div class="line"></div><div class="line">            <span class="keyword">for</span> (<span class="keyword">long</span> size = <span class="number">1</span>; size &lt; <span class="number">10</span>; size++) &#123;</div><div class="line">                assertThat(Long.parseLong(call(webResource1)), is(size));</div><div class="line">            &#125;</div><div class="line">            WebResource webResource2 = resource().path(<span class="string">"/test1/clear"</span>);</div><div class="line">            call(webResource2);</div><div class="line"></div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="meta">@Test</span></div><div class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">third_test</span><span class="params">()</span> </span>&#123;</div><div class="line"></div><div class="line">            <span class="keyword">for</span> (<span class="keyword">long</span> size = <span class="number">1</span>; size &lt; <span class="number">10</span>; size++) &#123;</div><div class="line">                assertThat(Long.parseLong(call(webResource1)), is(size));</div><div class="line">            &#125;</div><div class="line">            WebResource webResource2 = resource().path(<span class="string">"/test1/clear"</span>);</div><div class="line">            call(webResource2);</div><div class="line"></div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="function"><span class="keyword">private</span> String <span class="title">call</span><span class="params">(<span class="keyword">final</span> WebResource webResource)</span> </span>&#123;</div><div class="line"></div><div class="line">            String response = <span class="keyword">null</span>;</div><div class="line">            <span class="keyword">try</span> &#123;</div><div class="line">                response = webResource.get(String.class);</div><div class="line">                assertThat(<span class="string">"path ="</span> + webResource.getURI() + <span class="string">"response="</span> + response, !response.isEmpty(), is(<span class="keyword">true</span>));</div><div class="line">                LOGGER.info(<span class="string">"response="</span> + response);</div><div class="line">            &#125; <span class="keyword">catch</span> (UniformInterfaceException t) &#123;</div><div class="line">                Assert.fail(t.getMessage());</div><div class="line">                LOGGER.error(<span class="string">"erreur message="</span> + t.getMessage());</div><div class="line">                LOGGER.error(<span class="string">"erreur réponse="</span> + t.getResponse());</div><div class="line">            &#125;</div><div class="line"></div><div class="line">            <span class="keyword">return</span> response;</div><div class="line"></div><div class="line">        &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h1 id="L’execution-repetee"><a href="#L’execution-repetee" class="headerlink" title="L’exécution répétée"></a>L’exécution répétée</h1><p>La seconde contrainte à imposer au code est l’exécution répétée.</p>
+<p>La librairie <em>tempus-fugit</em> nous propose deux mécanismes pour exécuter du code de façon répétée :</p>
+<ul>
+<li>l’annotation <code>@Repeating</code></li>
+<li>L’annotation <code>@Intermittent</code> </li>
+</ul>
+<h2 id="L’annotation-Repeating"><a href="#L’annotation-Repeating" class="headerlink" title="L’annotation @Repeating"></a>L’annotation <code>@Repeating</code></h2><p>Souvent, la résolution des problèmes d’exécution concurrente de code n’est pas évidente, contrairement à l’exemple de cet article. Le bug se produit de façon erratique. Il est donc nécessaire de reproduire l’exécution des tests un grand nombre de fois, pour avoir la chance de faire échouer le code.</p>
+<p><em>Tempus-fugit</em>, nous fournit une autre <em>TestRule</em> intitulée <code>RepeatingRule</code>, qui est associée avec l’annotation <code>@Repeating</code>.</p>
+<p>Elle permet d’exécuter un grand nombre de fois une méthode de test. Elle peut se cumuler avec l’annotation <code>@Concurrent</code>.</p>
+<p>Voici un exemple d’une utilisation combinée de ces deux annotations :</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">   <span class="meta">@Rule</span></div><div class="line">   <span class="keyword">public</span> RepeatingRule repeatingRule = <span class="keyword">new</span> RepeatingRule();</div><div class="line"></div><div class="line"><span class="meta">@Test</span></div><div class="line"><span class="meta">@Concurrent</span>(count = <span class="number">2</span>)</div><div class="line"><span class="meta">@Repeating</span>(repetition=<span class="number">4</span>)</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testResources_with_concurrent_annotation</span><span class="params">()</span> </span>&#123;</div><div class="line"></div><div class="line">   <span class="keyword">for</span> (<span class="keyword">long</span> size = <span class="number">1</span>; size &lt; <span class="number">10</span>; size++) &#123;</div><div class="line">       assertThat(Long.parseLong(call(webResource1)), is(size));</div><div class="line">   &#125;</div><div class="line"> 	   WebResource webResource2 = resource().path(<span class="string">"/test1/clear"</span>);</div><div class="line">   call(webResource2);</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h2 id="L’annotation-Intermittent"><a href="#L’annotation-Intermittent" class="headerlink" title="L’annotation @Intermittent"></a>L’annotation <code>@Intermittent</code></h2><p>Cette annotation a de grandes similitudes avec l’annotation <code>@Repeating</code>, à ceci prêt qu’elle n’est pas associée avec une <code>TestRule</code>, mais avec le <em>runner Junit</em> <code>IntermittentTestRunner</code>. Elle possède également un attribut nommé <code>repetition</code>.</p>
+<p>Cette association a pour avantage d’exécuter <strong>à chaque répétition</strong>, les méthodes annotées par <code>@Before</code> et <code>@After</code>, contrairement aux <code>TestRule</code>.<br>{“Le principal inconvénient de @Intermittent est qu’on ne peut utiliser plus d’un runner Junit”}; on ne peut donc pas dans cette configuration utiliser un autre <em>runner</em>.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="meta">@RunWith</span>(IntermittentTestRunner.class)</div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">IntermittentTest</span> <span class="keyword">extends</span> <span class="title">WebRunner</span></span>&#123;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Logger LOGGER = LoggerFactory.getLogger(MultiThreadTest.class);</div><div class="line">    <span class="keyword">private</span> WebResource webResource1 = resource().path(<span class="string">"/test1/path1"</span>).queryParam(<span class="string">"value"</span>, <span class="string">"4"</span>);</div><div class="line"></div><div class="line"></div><div class="line">    <span class="meta">@Test</span></div><div class="line">    <span class="meta">@Intermittent</span>(repetition = <span class="number">30</span>)</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test_method1_with_intermittent_annotation</span><span class="params">()</span> </span>&#123;</div><div class="line">        call(webResource1);</div><div class="line">        LOGGER.info(<span class="string">"method1 executed"</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Test</span></div><div class="line">    <span class="meta">@Intermittent</span>(repetition = <span class="number">10</span>)</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test_method2_with_intermittent_annotation</span><span class="params">()</span> </span>&#123;</div><div class="line">        call(webResource1);</div><div class="line">        LOGGER.info(<span class="string">"method2 executed"</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">private</span> String <span class="title">call</span><span class="params">(<span class="keyword">final</span> WebResource webResource)</span> </span>&#123;</div><div class="line"></div><div class="line">        String response = <span class="keyword">null</span>;</div><div class="line">        <span class="keyword">try</span> &#123;</div><div class="line">            response = webResource.get(String.class);</div><div class="line">            assertThat(<span class="string">"path ="</span> + webResource.getURI() + <span class="string">"response="</span> + response, !response.isEmpty(), is(<span class="keyword">true</span>));</div><div class="line">            LOGGER.info(<span class="string">"response="</span> + response);</div><div class="line">        &#125; <span class="keyword">catch</span> (UniformInterfaceException t) &#123;</div><div class="line">            Assert.fail(t.getMessage());</div><div class="line">            LOGGER.error(<span class="string">"erreur message="</span> + t.getMessage());</div><div class="line">            LOGGER.error(<span class="string">"erreur réponse="</span> + t.getResponse());</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="keyword">return</span> response;</div><div class="line"></div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>#Conclusion</p>
+<p>La librairie <em>tempus-fugit</em> nous permet de tester la bonne exécution du code dans un environnement concurrent.<br>Elle nous offre deux alternatives pour mettre en place une exécution <strong>parallèle</strong> et <strong>répétée</strong> des tests unitaires Junit.<br>{“Tempus-fugit pallie au manque du support natif de Junit des contraintes de concurrence.”} <em>TestNG</em>, l’autre librairie de test, intègre nativement ces problématiques via les attributs <code>threadPoolSize</code>, et <code>invocationCount</code>. A noter que <em>TestNG</em> inclut aussi, <del>contrairement à <em>Junit</em> et <em>tempus-fugit</em></del>, les attributs <code>timeout</code> et <code>invocationTimeOut</code> pour définir respectivement le temps que le test et l’ensemble des tests doivent prendre au maximum pour être considéré comme positifs.</p>
+<p><em>Tempus-fugit</em> fournit d’autres fonctionnalités, comme entre autres, une gestion facilitée des Threads (interruptions, pause, réveil), une gestion des verrous, et une détection des deadlocks.</p>
+<h2 id="Mise-a-jour-du-13-04-2013"><a href="#Mise-a-jour-du-13-04-2013" class="headerlink" title="Mise à jour du 13/04/2013"></a><em>Mise à jour du 13/04/2013</em></h2><p>Junit permet bien de définir un temps d’exécution maximum par méthode via le paramètre <code>timeout</code> de l’annotation <code>@Test</code>.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="comment">//5 secondes maximum</span></div><div class="line"><span class="meta">@Test</span>(timeout=<span class="number">500</span>)</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">monTest</span><span class="params">()</span> </span>&#123;</div><div class="line">  ...</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>Junit permet aussi de définir un temps limite pour tous les tests d’une classe via la @Rule <code>TimeOut</code>.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MaCLasseDeTest</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="meta">@Rule</span></div><div class="line">    <span class="keyword">public</span> Timeout globalTimeout = <span class="keyword">new</span> Timeout(<span class="number">8000</span>); <span class="comment">// 8 secondes maximum par méthode de test</span></div><div class="line"></div><div class="line">    <span class="meta">@Test</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">monPremierTest</span><span class="params">()</span> </span>&#123;</div><div class="line">      ......</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Test</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">monDeuxiemeTest</span><span class="params">()</span> </span>&#123;</div><div class="line">       ...   &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h2 id="References"><a href="#References" class="headerlink" title="Références"></a>Références</h2><ul>
+<li><a href="http://www.junit.org" target="_blank" rel="external">Junit</a></li>
+<li><a href="http://tempusfugitlibrary.org" target="_blank" rel="external">tempus-fugit</a></li>
+<li><a href="http://jax-rs-spec.java.net" target="_blank" rel="external">JAX-RS</a></li>
+<li><a href="http://testng.org" target="_blank" rel="external">TestNG</a></li>
+</ul>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/blog/blog/categories/tempus-fugit/">tempus-fugit</a>, <a href="/blog/blog/categories/tempus-fugit/junit/">junit</a>, <a href="/blog/blog/categories/tempus-fugit/junit/java/">java</a>, <a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/">tdd</a>, <a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/">test</a>, <a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/">parallèle</a>, <a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/">multithread</a>, <a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/">testng</a>, <a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/">concurrence</a>, <a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/">thread-safe</a>, <a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/testrule/">testrule</a>
+  </div>
+
+        
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Commentaires</h1>
+
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Recherche">
+    <input type="hidden" name="q" value="site:clescot.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Catégories</h3>
+  <ul class="entry">
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/">JDBC</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JEE/">JEE</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/">JSON</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/">TDD</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/">big data</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/">cli</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/">communication</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/communication/">communication</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/">concurrence</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/">debug</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/">debug</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/">devops</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/git/">git</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/guice/">guice</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/">hook</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/">intégration continue</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/jersey/">jersey</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/">jsp</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/">kafka</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/">kafkacat</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/">logback</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/">logs</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/">mesure</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/">multithread</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/">organisation</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/outil/">outil</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/">parallèle</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/">performance</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/">productivité</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/">push</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/">scaleway</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/">spring</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/">swarm mode</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/tag/">tag</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/">tempus-fugit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/">terraform</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/">testng</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/testrule/">testrule</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/tests/">tests</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/">thread-safe</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/ubuntu/">ubuntu</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/">variables</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/">web</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/">web</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+
+  
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 Charles Lescot
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/blog/js/jquery.imagesloaded.min.js"></script>
+<script src="/blog/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,306 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Metrics, Pour Mesurer Efficacement Les Performances : Intégration Avec JDBC, Logback Et Jersey | Le blog de Charles Lescot.</title>
+  <meta name="author" content="Charles Lescot">
+  
+  <meta name="description" content="Blog sur Java, le web, et les méthodes agiles.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Metrics, Pour Mesurer Efficacement Les Performances : Intégration Avec JDBC, Logback Et Jersey"/>
+  <meta property="og:site_name" content="Le blog de Charles Lescot."/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/blog/favicon.png" rel="icon">
+  <link rel="alternate" href="/blog/atom.xml" title="Le blog de Charles Lescot." type="application/atom+xml">
+  <link rel="stylesheet" href="/blog/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/blog/">Le blog de Charles Lescot.</a></h1>
+  <h2><a href="/blog/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/blog/">Home</a></li>
+    
+      <li><a href="/blog/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-11T05:16:00.000Z"><a href="/blog/2013/10/11/2013-10-11-metrics-pour-mesurer-efficacement-les-performances-integration-avec-JDBC-logback-et-jersey/">11/10/13</a></time>
+      
+      
+  
+    <h1 class="title">Metrics, Pour Mesurer Efficacement Les Performances : Intégration Avec JDBC, Logback Et Jersey</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="Presentation-de-Metrics"><a href="#Presentation-de-Metrics" class="headerlink" title="Présentation de Metrics"></a>Présentation de Metrics</h1><p>Je vous propose dans cette série de 4 articles, de vous présenter la librairie <a href="https://github.com/codahale/metrics" target="_blank" rel="external">Metrics</a>,<br>initié par la société <a href="https://www.yammer.com/" target="_blank" rel="external">Yammer</a>.<br>Celle-ci permet de fournir des métriques au niveau applicatif et JVM.</p>
+<p>Ce quatrième article, présente l’intégration de Metrics avec les drivers JDBC, logback et jersey.</p>
+<h1 id="avec-les-drivers-JDBC"><a href="#avec-les-drivers-JDBC" class="headerlink" title="avec les drivers JDBC"></a>avec les drivers JDBC</h1><p>La librairie <code>JDBCMetrics</code> intégre JDBC avec Metrics. Cela permet : </p>
+<ul>
+<li>d’avoir une vision globale de la charge de la base de données issue de votre application</li>
+<li>d’avoir une vision précise du nombre et des performances des requêtes SQL pour chaque requête HTTP</li>
+</ul>
+<p>Pour rajouter ce module à votre application, il faut rajouter la dépendance suivante à votre fichier maven <code>pom.xml</code>:<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line"> <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.soulgalore<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line"> <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>jdbcmetrics<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line"> <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>La vision globale de la charge de la base de données induite par l’application est possible via la configuration du driver JDBC, soit via un <code>Datasource</code> (la librairie jouant le rôle de proxy), soit via le <code>DriverManager</code>.</p>
+<p>Au passage DriverManager est une classe dépréciée, ayant un comportement incohérent au niveau du chargement du driver. Préférez donc le Datasource.</p>
+<p>La vision précise de la charge au niveau base de données par requête HTTP, est permise de façon optionnelle via l’installation d’un servlet filter :<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">filter&gt;</div><div class="line">    <span class="tag">&lt;<span class="name">filter-name</span>&gt;</span>JDBCMetricsFilter<span class="tag">&lt;/<span class="name">filter-name</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">filter-class</span>&gt;</span></div><div class="line">        com.soulgalore.jdbcmetrics.filter.JDBCMetricsFilter</div><div class="line">    <span class="tag">&lt;/<span class="name">filter-class</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">init-param</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">param-name</span>&gt;</span>use-headers<span class="tag">&lt;/<span class="name">param-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">param-value</span>&gt;</span>true<span class="tag">&lt;/<span class="name">param-value</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">init-param</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">init-param</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">param-name</span>&gt;</span>request-header-name<span class="tag">&lt;/<span class="name">param-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">param-value</span>&gt;</span>jdbcmetrics<span class="tag">&lt;/<span class="name">param-value</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">init-param</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">filter</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">filter-mapping</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">filter-name</span>&gt;</span>JDBCMetricsFilter<span class="tag">&lt;/<span class="name">filter-name</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">url-pattern</span>&gt;</span>/*<span class="tag">&lt;/<span class="name">url-pattern</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">filter-mapping</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>Pour avoir la mesure de la charge occasionnée par requête HTTP, il faut dans celle-ci mettre le header suivant :</p>
+<p><code>jdbcmetrics=yes</code></p>
+<p>La requête HTTP devra donc comporter cette entête supplémentaire, afin d’avoir une réponse incluant des entêtes spécifiques<br>à JDBC.</p>
+<p>voici un exemple de requête HTTP ayant cette entête (via l’extension Firefox RESTClient), ainsi que les entêtes de la réponse : </p>
+<img src="/blog/images/jdbc-metrics-custom-header.png" class="[center]" title="requête HTTP pour jdbcmetrics">
+<p>Les Métriques JDBC sont bien sûr visualisables via les reporters (ici via JMX) :</p>
+<img src="/blog/images/metrics-jdbc.png" class="[center]" title="métriques du driver JDBC">
+<p><a href="https://github.com/clescot/metrics-example" target="_blank" rel="external">L’application exemple de cette série d’articles</a>, intègre Metrics et Guice, ainsi que JDBCMetrics.</p>
+<p>Voici un exemple de module Guice, permettant d’installer le proxy JDBCMetrics entre le pool de connexions de la base et l’application : </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> com.clescot.rest;</div><div class="line"></div><div class="line"><span class="keyword">import</span> com.google.inject.Binder;</div><div class="line"><span class="keyword">import</span> com.google.inject.Module;</div><div class="line"></div><div class="line"><span class="keyword">import</span> javax.sql.DataSource;</div><div class="line"><span class="keyword">import</span> java.sql.Connection;</div><div class="line"><span class="keyword">import</span> java.sql.PreparedStatement;</div><div class="line"><span class="keyword">import</span> java.sql.SQLException;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JDBCMetricsModule</span> <span class="keyword">implements</span> <span class="title">Module</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String JDBC_H2_URL = <span class="string">"jdbc:h2:mem:test"</span>;</div><div class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String USERNAME = <span class="string">"sa"</span>;</div><div class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String PASSWORD = <span class="string">""</span>;</div><div class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String CREATE_TABLE_FOR_AUDIT = <span class="string">"create table ACTIVITY (ID INTEGER auto_increment,STARTTIME datetime, ENDTIME datetime,  ACTIVITY_NAME VARCHAR(200),PRIMARY KEY (ID) )"</span>;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(Binder binder)</span> </span>&#123;</div><div class="line">        org.apache.tomcat.jdbc.pool.DataSource h2DataSource = <span class="keyword">new</span> org.apache.tomcat.jdbc.pool.DataSource();</div><div class="line">        h2DataSource.setUrl(JDBC_H2_URL);</div><div class="line">        h2DataSource.setUsername(USERNAME);</div><div class="line">        h2DataSource.setPassword(PASSWORD);</div><div class="line">        h2DataSource.setDriverClassName(org.h2.Driver.class.getName());</div><div class="line">        <span class="keyword">try</span>(Connection connection = h2DataSource.getConnection())&#123;</div><div class="line">            PreparedStatement preparedStatement = connection.prepareStatement(CREATE_TABLE_FOR_AUDIT);</div><div class="line">            preparedStatement.execute();</div><div class="line"></div><div class="line">        &#125; <span class="keyword">catch</span> (SQLException e) &#123;</div><div class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(e);</div><div class="line">        &#125;</div><div class="line">        com.soulgalore.jdbcmetrics.DataSource metricsDataSourceProxy = <span class="keyword">new</span> com.soulgalore.jdbcmetrics.DataSource(h2DataSource);</div><div class="line">        binder.bind(DataSource.class).toInstance(metricsDataSourceProxy);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h1 id="avec-Logback"><a href="#avec-Logback" class="headerlink" title="avec Logback"></a>avec Logback</h1><p>Metrics fournit une librairie d’intégration avec logback, pour remonter des informations concernant la fréquence des évenements logués <strong>suivant le niveau de log</strong>.</p>
+<p>Pour intégrer Metrics et logback, il faut rajouter la dépendance suivante dans votre fichier <code>pom.xml</code> :<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.codahale.metrics<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>metrics-logback<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>Voici le code à utiliser pour lier Metrics à logback.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">final</span> LoggerContext factory = (LoggerContext) LoggerFactory.getILoggerFactory();</div><div class="line"><span class="keyword">final</span> Logger root = factory.getLogger(Logger.ROOT_LOGGER_NAME);</div><div class="line"></div><div class="line"><span class="keyword">final</span> InstrumentedAppender metrics = <span class="keyword">new</span> InstrumentedAppender(registry);</div><div class="line">metrics.setContext(root.getLoggerContext());</div><div class="line">metrics.start();</div><div class="line">root.addAppender(metrics);</div></pre></td></tr></table></figure>
+<p>Une application concrète de cette intégration pourrait être une surveillance d’évenements logués en erreur ou warning, afin de réagir rapidement quand ceux-ci surviennent avec une fréquence importante.</p>
+<p>Voici comment installer une mesure concernant les logs ayant le niveau <code>error</code> dans logback :</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">registry.meter(<span class="string">"ch.qos.logback.core.Appender.error"</span>);</div></pre></td></tr></table></figure>
+<p>A noter qu’une intégation avec log4J existe aussi.</p>
+<h1 id="avec-Jersey"><a href="#avec-Jersey" class="headerlink" title="avec Jersey"></a>avec Jersey</h1><p>Pour intégrer les mesures de Metrics avec les services REST exposés via Jersey et Spring, il est nécessaire d’intégrer le module suivant à votre fichier <code>pom.xml</code> :<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">      <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.yammer.metrics<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">      <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>metrics-jersey<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">      <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">   <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<h2 id="Serialisation-du-registre-Metrics-en-JSON-via-jackson"><a href="#Serialisation-du-registre-Metrics-en-JSON-via-jackson" class="headerlink" title="Sérialisation du registre Metrics en JSON via jackson"></a>Sérialisation du registre Metrics en JSON via jackson</h2><p>Le module maven <code>metrics-json</code>, permet de sérialiser facilement les mesures au format JSON, via des modules Jackson dédiés.</p>
+<p>l’ajout de la dépendance suivante dans votre <code>pom.xml</code> permet de les utiliser : </p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;dependency&gt;</div><div class="line">    &lt;groupId&gt;com.codahale.metrics&lt;/groupId&gt;</div><div class="line">    &lt;artifactId&gt;metrics-json&lt;/artifactId&gt;</div><div class="line">    &lt;version&gt;3.0.1&lt;/version&gt;</div><div class="line">&lt;/dependency&gt;</div></pre></td></tr></table></figure>
+<p>De plus, vous devez créer une ressource REST, qui va exposer la représentation JSON de votre registre Metrics comme dans l’exemple suivant : </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@Path</span>(<span class="string">"/"</span>)</div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FooResource</span> </span>&#123;</div><div class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> ObjectMapper mapper = <span class="keyword">new</span> ObjectMapper().registerModules(</div><div class="line">            <span class="keyword">new</span> com.codahale.metrics.json.MetricsModule(TimeUnit.SECONDS, TimeUnit.MILLISECONDS, <span class="keyword">false</span>),<span class="keyword">new</span> HealthCheckModule());</div><div class="line"><span class="keyword">private</span> MetricRegistry registry;</div><div class="line"></div><div class="line">    <span class="meta">@Inject</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="title">FooResource</span><span class="params">(MetricRegistry registry)</span> </span>&#123;</div><div class="line">        <span class="keyword">this</span>.registry = registry;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Path</span>(<span class="string">"/metrics"</span>)</div><div class="line">    <span class="meta">@GET</span></div><div class="line">    <span class="meta">@Produces</span>(MediaType.APPLICATION_JSON)</div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">serializeMetricsRegistryInJSON</span><span class="params">()</span> <span class="keyword">throws</span> JsonProcessingException </span>&#123;</div><div class="line">        <span class="keyword">return</span> mapper.writeValueAsString(registry);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>Ainsi, cette ressource JAX-RS exposera sur l’url <a href="http://monhost:8080/metrics" target="_blank" rel="external">http://monhost:8080/metrics</a> en GET une représentation JSON du registre Metrics.</p>
+<p>Une exposition de ces métriques peut être utile, pour par exemple, une page de supervision habillant ces métriques avec du javascript.</p>
+<h2 id="conclusion"><a href="#conclusion" class="headerlink" title="conclusion"></a>conclusion</h2><p>La librairie Metrics est très pratique. Son usage s’est largement répandu, ce qui se traduit par la présence de librairies tierces afin d’enrichir son usage. Les 4 articles de cette série vous ont permis j’espère, de vous familiariser avec cette librairie.<br>J’ai mis en place cette solution chez un de mes clients, en envoyant les informations de Metrics vers un serveur Graphite, pour une historisation pérenne, et un travail à postériori sur les métriques techniques ou fonctionnelles remontées.</p>
+<p>Afin de distinguer les métriques des différents environnements (poste de développement, recette, pre-production, production…), remontées vers le même serveur, j’ai mis en place un <code>ServletContextListener</code> qui configure au démarrage de l’application le reporter Graphite en fonction de variables positionnées au lancement du serveur. Les métriques seront donc présentes dans graphite dans des arborescences séparées, via un préfixe différent.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> com.clescot.listener;</div><div class="line"></div><div class="line"><span class="keyword">import</span> javax.servlet.ServletContextEvent;</div><div class="line"><span class="keyword">import</span> javax.servlet.ServletContextListener;</div><div class="line"><span class="keyword">import</span> java.util.concurrent.TimeUnit;</div><div class="line"></div><div class="line"><span class="keyword">import</span> com.yammer.metrics.reporting.GraphiteReporter;</div><div class="line"><span class="keyword">import</span> org.slf4j.Logger;</div><div class="line"><span class="keyword">import</span> org.slf4j.LoggerFactory;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MetricsGraphiteContextListener</span> <span class="keyword">implements</span> <span class="title">ServletContextListener</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String DEFAULT_GRAPHITE_HOST = <span class="string">"graphite"</span>;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String DEFAULT_GRAPHITE_PORT = <span class="string">"2003"</span>;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String DEFAULT_GRAPHITE_PREFIX = <span class="string">"default.graphite.prefix'"</span>;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String DEFAULT_GRAPHITE_PERIOD = <span class="string">"1"</span>;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger LOGGER = LoggerFactory.getLogger(MetricsGraphiteContextListener.class);</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> TimeUnit DEFAULT_GRAPHITE_TIME_UNIT = TimeUnit.MINUTES;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String GRAPHITE_HOST_SYSTEM_PROPERTY_KEY = <span class="string">"graphite.host"</span>;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String GRAPHITE_PERIOD_SYSTEM_PROPERTY_KEY = <span class="string">"graphite.period"</span>;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String GRAPHITE_TIME_UNIT_SYSTEM_PROPERTY_KEY = <span class="string">"graphite.time.unit"</span>;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String GRAPHITE_PORT_SYSTEM_PROPERTY_KEY = <span class="string">"graphite.port"</span>;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String GRAPHITE_PREFIX_SYSTEM_PROPERTY_KEY = <span class="string">"graphite.prefix"</span>;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String JAVA_SYSTEM_PARAMETER_PREFIX = <span class="string">" '-D"</span>;</div><div class="line"></div><div class="line">    <span class="meta">@Overridemetrics</span>-<span class="function">example</span></div><div class="line"></div><div class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title">contextInitialized</span><span class="params">(<span class="keyword">final</span> ServletContextEvent sce)</span> &#123;</div><div class="line"></div><div class="line">        <span class="keyword">final</span> String servletContextName = sce.getServletContext().getServletContextName();</div><div class="line">        </div><div class="line">        String graphiteHost = System.getProperty(GRAPHITE_HOST_SYSTEM_PROPERTY_KEY, DEFAULT_GRAPHITE_HOST);</div><div class="line"></div><div class="line">        Long period = Long.parseLong(System.getProperty(GRAPHITE_PERIOD_SYSTEM_PROPERTY_KEY, DEFAULT_GRAPHITE_PERIOD));</div><div class="line"></div><div class="line">        TimeUnit timeUnit = TimeUnit</div><div class="line">                .valueOf(System.getProperty(GRAPHITE_TIME_UNIT_SYSTEM_PROPERTY_KEY, DEFAULT_GRAPHITE_TIME_UNIT.name()));</div><div class="line"></div><div class="line">        <span class="keyword">int</span> graphitePort = Integer</div><div class="line">                .parseInt(System.getProperty(GRAPHITE_PORT_SYSTEM_PROPERTY_KEY, DEFAULT_GRAPHITE_PORT));</div><div class="line"></div><div class="line">        String graphitePrefix = System.getProperty(GRAPHITE_PREFIX_SYSTEM_PROPERTY_KEY, DEFAULT_GRAPHITE_PREFIX);</div><div class="line"></div><div class="line">        GraphiteReporter.enable(period, timeUnit, graphiteHost, graphitePort, graphitePrefix +<span class="string">"."</span>+servletContextName);</div><div class="line">        LOGGER.info(</div><div class="line">                <span class="string">"graphite reporter enabled : period='&#123;&#125;', timeUnit='&#123;&#125;', graphite host='&#123;&#125;', graphite port='&#123;&#125;', metricsprefix='&#123;&#125;'"</span>,</div><div class="line">                period, timeUnit, graphiteHost, graphitePort, graphitePrefix +<span class="string">"."</span>+servletContextName);</div><div class="line">        LOGGER.info(<span class="string">"to customize graphite options listed above, put in the java command line some of these ones (without simple quotes):"</span>);</div><div class="line">        LOGGER.info(JAVA_SYSTEM_PARAMETER_PREFIX + GRAPHITE_PERIOD_SYSTEM_PROPERTY_KEY + <span class="string">"=yourCustomGraphitePeriod'"</span>);</div><div class="line">        LOGGER.info(</div><div class="line">                JAVA_SYSTEM_PARAMETER_PREFIX + GRAPHITE_TIME_UNIT_SYSTEM_PROPERTY_KEY + <span class="string">"=yourCustomGraphiteTimeUnit'"</span>);</div><div class="line">        LOGGER.info(JAVA_SYSTEM_PARAMETER_PREFIX + GRAPHITE_HOST_SYSTEM_PROPERTY_KEY + <span class="string">"=yourCustomGraphiteHost'"</span>);</div><div class="line">        LOGGER.info(JAVA_SYSTEM_PARAMETER_PREFIX +GRAPHITE_PORT_SYSTEM_PROPERTY_KEY+<span class="string">"=yourCustomGraphitePort'"</span>);</div><div class="line">        LOGGER.info(JAVA_SYSTEM_PARAMETER_PREFIX +GRAPHITE_PREFIX_SYSTEM_PROPERTY_KEY+<span class="string">"=yourCustomGraphitePrefix'"</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">contextDestroyed</span><span class="params">(<span class="keyword">final</span> ServletContextEvent sce)</span> </span>&#123;</div><div class="line"></div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h2 id="References"><a href="#References" class="headerlink" title="Références"></a>Références</h2><ul>
+<li><a href="http://metrics.codahale.com/manual/core/" target="_blank" rel="external">Metrics</a></li>
+<li><a href="http://metrics.codahale.com/manual/logback/" target="_blank" rel="external">Logback</a></li>
+<li><a href="https://jersey.java.net" target="_blank" rel="external">Jersey</a></li>
+<li><a href="https://github.com/soulgalore/jdbcmetrics" target="_blank" rel="external">JDBCMetrics</a></li>
+<li><a href="https://github.com/clescot/metrics-example" target="_blank" rel="external">application example liée à cette série d’articles</a></li>
+</ul>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/blog/blog/categories/performance/">performance</a>, <a href="/blog/blog/categories/performance/mesure/">mesure</a>, <a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a>, <a href="/blog/blog/categories/performance/mesure/metrique/JDBC/">JDBC</a>, <a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/">logback</a>, <a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/jersey/">jersey</a>
+  </div>
+
+        
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Commentaires</h1>
+
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Recherche">
+    <input type="hidden" name="q" value="site:clescot.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Catégories</h3>
+  <ul class="entry">
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/">JDBC</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JEE/">JEE</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/">JSON</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/">TDD</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/">big data</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/">cli</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/">communication</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/communication/">communication</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/">concurrence</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/">debug</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/">debug</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/">devops</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/git/">git</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/guice/">guice</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/">hook</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/">intégration continue</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/jersey/">jersey</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/">jsp</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/">kafka</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/">kafkacat</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/">logback</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/">logs</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/">mesure</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/">multithread</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/">organisation</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/outil/">outil</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/">parallèle</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/">performance</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/">productivité</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/">push</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/">scaleway</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/">spring</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/">swarm mode</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/tag/">tag</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/">tempus-fugit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/">terraform</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/">testng</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/testrule/">testrule</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/tests/">tests</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/">thread-safe</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/ubuntu/">ubuntu</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/">variables</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/">web</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/">web</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+
+  
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 Charles Lescot
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/blog/js/jquery.imagesloaded.min.js"></script>
+<script src="/blog/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

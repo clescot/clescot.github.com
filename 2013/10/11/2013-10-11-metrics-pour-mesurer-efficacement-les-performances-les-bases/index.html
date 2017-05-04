@@ -1,0 +1,327 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Metrics, Pour Mesurer Efficacement Les Performances : Les Bases | Le blog de Charles Lescot.</title>
+  <meta name="author" content="Charles Lescot">
+  
+  <meta name="description" content="Blog sur Java, le web, et les méthodes agiles.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Metrics, Pour Mesurer Efficacement Les Performances : Les Bases"/>
+  <meta property="og:site_name" content="Le blog de Charles Lescot."/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/blog/favicon.png" rel="icon">
+  <link rel="alternate" href="/blog/atom.xml" title="Le blog de Charles Lescot." type="application/atom+xml">
+  <link rel="stylesheet" href="/blog/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/blog/">Le blog de Charles Lescot.</a></h1>
+  <h2><a href="/blog/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/blog/">Home</a></li>
+    
+      <li><a href="/blog/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-11T01:44:00.000Z"><a href="/blog/2013/10/11/2013-10-11-metrics-pour-mesurer-efficacement-les-performances-les-bases/">11/10/13</a></time>
+      
+      
+  
+    <h1 class="title">Metrics, Pour Mesurer Efficacement Les Performances : Les Bases</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="presentation-de-Metrics"><a href="#presentation-de-Metrics" class="headerlink" title="présentation de Metrics"></a>présentation de Metrics</h1><p>Je vous propose dans cette série de 4 articles, de vous présenter la librairie <a href="https://github.com/codahale/metrics" target="_blank" rel="external">Metrics</a>,<br>initié par la société <a href="https://www.yammer.com/" target="_blank" rel="external">Yammer</a>.<br>Celle-ci permet de fournir des métriques au niveau applicatif et JVM.</p>
+<p>Ce premier article, présente les différents types de mesures disponibles dans Metrics, leur usage et leur installation.</p>
+<h1 id="pourquoi-mesurer"><a href="#pourquoi-mesurer" class="headerlink" title="pourquoi mesurer ?"></a>pourquoi mesurer ?</h1><p><a href="http://blog.octo.com/les-patterns-des-grands-du-web-lobsession-de-la-mesure/" target="_blank" rel="external">A l’instar des grands du web</a>, il devient primordial de mesurer les choses avant d’agir.<br>Cela permet de matérialiser, identifier et comprendre le fonctionnement interne en production de nos applications. Cela permet aussi de lever des freins techniques ou fonctionnels, notamment en comprenant la valeur métier de certaines fonctionnalités, les dysfonctionnements techniques ou le manque de performances. Pour cela, rien de tel qu’une mesure fiable, numérique, pour comprendre, et prendre des décisions. </p>
+<p>La librairie Metrics, est une bonne solution pour répondre à ce besoin.</p>
+<h2 id="installation-de-metrics"><a href="#installation-de-metrics" class="headerlink" title="installation de metrics"></a>installation de metrics</h2><p>Pour installer Metrics, il faut rajouter à son fichier maven <code>pom.xml</code>, la section suivante :</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.codahale.metrics<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>metrics-core<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div></pre></td></tr></table></figure>
+<h3 id="montee-de-version-renommage-de-package"><a href="#montee-de-version-renommage-de-package" class="headerlink" title="montée de version, renommage de package"></a>montée de version, renommage de package</h3><p>A noter qu’à partir de la version 3, Metrics a pour package de base <code>com.codahale.metrics</code>, et non <code>com.yammer.metrics</code> (cas des versions 2.x).</p>
+<h2 id="Isolation-des-metriques-par-application"><a href="#Isolation-des-metriques-par-application" class="headerlink" title="Isolation des métriques par application"></a>Isolation des métriques par application</h2><p>Toutes les métriques de Metrics, sont stockées dans une instance de MetricsRegistry. Pour que plusieurs applications au sein de la même JVM, aient des métriques dissociées, il faut que chacune d’elles créent leur propre instance (chaque application étant isolée car possédant son propre classloader). Ceci peut soit se faire via le framework d’injection de dépendances (Spring, Guice), soit via un servletListener pour des applications JEE, ou via un champ statique public final de chaque application, accessible depuis l’extérieur de la classe.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> MetricRegistry metrics = <span class="keyword">new</span> MetricRegistry();</div></pre></td></tr></table></figure>
+<h2 id="les-metriques-disponibles"><a href="#les-metriques-disponibles" class="headerlink" title="les métriques disponibles"></a>les métriques disponibles</h2><p>Le registre installé, nous pouvons créer les métriques dont nous avons besoin.</p>
+<p>Voici les différents types de métriques disponibles :</p>
+<ul>
+<li>la jauge</li>
+<li>le compteur</li>
+<li>la mesure</li>
+<li>l’histogramme</li>
+<li>la mesure</li>
+<li>le timer</li>
+</ul>
+<p>Lors de cette création, nous pouvons les identifier de façon unique dans le registre par les éléments suivants :</p>
+<ul>
+<li>groupe : la valeur par défaut est le package de la classe</li>
+<li>type : nom de classe</li>
+<li>nom : décrit le but de la métrique</li>
+<li>scope (optionel) : permet de différentier des métriques de plusieurs instances d’une même classe</li>
+</ul>
+<h3 id="la-jauge"><a href="#la-jauge" class="headerlink" title="la jauge"></a>la jauge</h3><p>La jauge représente la valeur <strong>instantanée</strong> de ce qui est mesuré. Cette mesure simple, est à utiliser quand <strong>nous ne maîtrisons pas directement son incrément et son décrément.</strong><br>C’est le cas quand la valeur représente un système externe, ou quand celle-ci est maîtrisée par une librairie tierce. </p>
+<p>Un exemple d’usage de la jauge est le nombre de sessions actives dans une application web.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">registry.register(name(SessionStore.class, <span class="string">"active-sessions"</span>), <span class="keyword">new</span> Gauge&lt;Integer&gt;() &#123;</div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> Integer <span class="title">getValue</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> store.getActiveSessions();</div><div class="line">    &#125;</div><div class="line">&#125;);</div></pre></td></tr></table></figure>
+<h4 id="la-jauge-JMX"><a href="#la-jauge-JMX" class="headerlink" title="la jauge JMX"></a>la jauge JMX</h4><p>Cette jauge spécialisée permet d’intégrer <strong>facilement</strong> dans le registre Metrics, une valeur exposée via JMX. Metrics peut donc devenir l’unique référentiel de métriques applicatives, en récupérant des données tierces via JMX, afin de les exposer via d’autres canaux (JMX, Graphite, Ganglia etc…).</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">registry.register(name(SessionStore.class, <span class="string">"cache-evictions"</span>),</div><div class="line">                 <span class="keyword">new</span> JmxAttributeGauge(<span class="string">"net.sf.ehcache:type=Cache,scope=sessions,name=eviction-count"</span>, <span class="string">"Value"</span>));</div></pre></td></tr></table></figure>
+<h4 id="la-jauge-ratio"><a href="#la-jauge-ratio" class="headerlink" title="la jauge ratio"></a>la jauge ratio</h4><p>Cette jauge permet d’intégrer dans Metrics, le résultat du <strong>rapport entre deux variables</strong>.<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CacheHitRatio</span> <span class="keyword">extends</span> <span class="title">RatioGauge</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Meter hits;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Timer calls;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="title">CacheHitRatio</span><span class="params">(Meter hits, Timer calls)</span> </span>&#123;</div><div class="line">        <span class="keyword">this</span>.hits = hits;</div><div class="line">        <span class="keyword">this</span>.calls = calls;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> Ratio <span class="title">getValue</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> Ratio.of(hits.oneMinuteRate(),</div><div class="line">                        calls.oneMinuteRate());</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h4 id="la-jauge-cachee"><a href="#la-jauge-cachee" class="headerlink" title="la jauge cachée"></a>la jauge cachée</h4><p>Cette jauge permet de réutiliser pendant un temps paramétrable via un <strong>cache</strong>, un résultat coûteux à récupérer.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">registry.register(name(Cache.class, cache.getName(), <span class="string">"size"</span>),</div><div class="line">                  <span class="keyword">new</span> CachedGauge&lt;Long&gt;(<span class="number">10</span>, TimeUnit.MINUTES) &#123;</div><div class="line">                      <span class="meta">@Override</span></div><div class="line">                      <span class="function"><span class="keyword">protected</span> Long <span class="title">loadValue</span><span class="params">()</span> </span>&#123;</div><div class="line">                          <span class="comment">// assume this does something which takes a long time</span></div><div class="line">                          <span class="keyword">return</span> cache.getSize();</div><div class="line">                      &#125;</div><div class="line">                  &#125;);</div></pre></td></tr></table></figure>
+<h4 id="la-jauge-derivee"><a href="#la-jauge-derivee" class="headerlink" title="la jauge dérivée"></a>la jauge dérivée</h4><p>Cette jauge permet de calculer un résultat <strong>à partir d’une jauge déjà présente</strong> dans le registre de Metrics.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">QueueManager</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Queue queue;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="title">QueueManager</span><span class="params">(MetricRegistry metrics, String name)</span> </span>&#123;</div><div class="line">        <span class="keyword">this</span>.queue = <span class="keyword">new</span> Queue();</div><div class="line">        metrics.register(MetricRegistry.name(QueueManager.class, name, <span class="string">"size"</span>),</div><div class="line">                         <span class="keyword">new</span> Gauge&lt;Integer&gt;() &#123;</div><div class="line">                             <span class="meta">@Override</span></div><div class="line">                             <span class="function"><span class="keyword">public</span> Integer <span class="title">getValue</span><span class="params">()</span> </span>&#123;</div><div class="line">                                 <span class="keyword">return</span> queue.size();</div><div class="line">                             &#125;</div><div class="line">                         &#125;);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="le-compteur"><a href="#le-compteur" class="headerlink" title="le compteur"></a>le compteur</h3><p>représente une mesure maîtrisée par l’application, <strong>qui s’incrémente et se décrémente</strong>.<br>Un exemple de compteur pourrait être le nombre de tâches planifiées en cours d’exécution à un instant t.<br>Tous les compteurs ont une valeur initiale de 0.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">private</span> <span class="keyword">final</span> Counter pendingJobs = metrics.counter(name(QueueManager.class, <span class="string">"pending-jobs"</span>));</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addJob</span><span class="params">(Job job)</span> </span>&#123;</div><div class="line">    pendingJobs.inc();</div><div class="line">    queue.offer(job);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">public</span> Job <span class="title">takeJob</span><span class="params">()</span> </span>&#123;</div><div class="line">    pendingJobs.dec();</div><div class="line">    <span class="keyword">return</span> queue.take();</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="l’histogramme"><a href="#l’histogramme" class="headerlink" title="l’histogramme"></a>l’histogramme</h3><p>L’histogramme représente <strong>la distribution statistique de valeurs d’un ensemble de données</strong>.<br>Cela nous permet d’avoir des informations comme la moyenne, le minimum, le maximum, la médiane, la déviation standard, les quartiles ou percentiles.<br>Afin d’éviter un plantage, lorsque le calcul porte sur un grand nombre de données, Metrics réalise un échantillonage statistique représentatif, via différents algorithmes, appelés <strong>Reservoirs</strong>. </p>
+<p>Les réservoirs fournis, hormis le dernier présenté, ont la particularité d’avoir <strong>une occupation mémoire restreinte</strong>.</p>
+<h4 id="Des-echantillons-uniformes"><a href="#Des-echantillons-uniformes" class="headerlink" title="Des échantillons uniformes"></a>Des échantillons uniformes</h4><p>Il existe <em>l’algorithme de Vitter</em>, qui produit des échantillons uniformes. Celui-ci est intéressant pour faire une <strong>analyse à long terme</strong>, mais n’est pas adaptée pour savoir si la distribution des données porte un changement significatif récent.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> Histogram histogram= METRIC_REGISTRY.register(<span class="string">"myLongTermHistogram"</span>,<span class="keyword">new</span> Histogram(<span class="keyword">new</span> UniformReservoir()));</div></pre></td></tr></table></figure>
+<h4 id="Des-echantillons-recents"><a href="#Des-echantillons-recents" class="headerlink" title="Des échantillons récents"></a>Des échantillons récents</h4><p>Il existe aussi un algorithme mettant un fort poids statistique sur des données récentes. Celui-ci est à privilégier lorsque l’on veut avoir une <strong>vision récente de la distribution des évenements</strong>.</p>
+<p>Cette algorithme est utilisé par défaut dans les Timers.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> Histogram histogram= METRIC_REGISTRY.register(<span class="string">"myshortTermHistogram"</span>,<span class="keyword">new</span> Histogram(<span class="keyword">new</span> ExponentiallyDecayingReservoir()));</div></pre></td></tr></table></figure>
+<h4 id="Des-echantillons-a-fenetre-glissante"><a href="#Des-echantillons-a-fenetre-glissante" class="headerlink" title="Des échantillons à fenêtre glissante"></a>Des échantillons à fenêtre glissante</h4><p>cet algorithme permet d’étudier la <strong>distribution des N dernières données</strong>.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> Histogram histogram= METRIC_REGISTRY.register(<span class="string">""</span>,<span class="keyword">new</span> Histogram(<span class="keyword">new</span> SlidingWindowReservoir(<span class="number">1024</span>)));</div></pre></td></tr></table></figure>
+<h4 id="Des-echantillons-temporels-a-fenetre-glissante"><a href="#Des-echantillons-temporels-a-fenetre-glissante" class="headerlink" title="Des échantillons temporels à fenêtre glissante"></a>Des échantillons temporels à fenêtre glissante</h4><p>cet algorithme permet d’étudier <strong>la distribution des N dernières secondes</strong>.<br>Un bémol est à apporter concernant cet algorithme, qui contrairement aux autres, porte sur la totalité des données des N dernières secondes, ce qui peut représenter <strong>un volume en mémoire important</strong>. Cet algorithme est aussi le plus lent.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> Histogram histogram= METRIC_REGISTRY.register(<span class="string">"lastTenMinutes"</span>,<span class="keyword">new</span> Histogram(<span class="keyword">new</span> SlidingTimeWindowReservoir(<span class="number">10</span>,TimeUnit.MINUTES)));</div></pre></td></tr></table></figure>
+<h3 id="la-mesure"><a href="#la-mesure" class="headerlink" title="la mesure"></a>la mesure</h3><p>La mesure mesure <strong>la fréquence</strong> à laquelle surviennent les évenements sur les périodes suivantes : </p>
+<ul>
+<li>la durée de vie complète de l’application</li>
+<li>les 15 dernières minutes</li>
+<li>les 5 dernières minutes</li>
+<li>la dernière minute</li>
+</ul>
+<p>Le nombre de requêtes par seconde pendant les 5 dernières minutes est un bon exemple de mesures.</p>
+<p>L’alimentation de cette mesure se fait de la façon suivante :<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">private</span> <span class="keyword">final</span> Meter requests = metrics.meter(name(RequestHandler.class, <span class="string">"requests"</span>));</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">handleRequest</span><span class="params">(Request request, Response response)</span> </span>&#123;</div><div class="line">    requests.mark();</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h3 id="le-timer"><a href="#le-timer" class="headerlink" title="le timer"></a>le timer</h3><p>Le timer représente <strong>un histogramme des durées et une mesure de la fréquence d’apparition</strong>.</p>
+<p>Un résulat issu de l’usage du timer serait : </p>
+<p> à 1500 requêtes par seconde, notre latence augmente de 25 à 357 ms.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">final</span> Timer timer = registry.timer(name(Filter.class, <span class="string">"requests"</span>));</div><div class="line"></div><div class="line"><span class="keyword">final</span> Timer.Context context = timer.time();</div><div class="line"><span class="keyword">try</span> &#123;</div><div class="line">    <span class="comment">// handle request</span></div><div class="line">&#125; <span class="keyword">finally</span> &#123;</div><div class="line">    context.stop();</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h1 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h1><p>J’espère que ce premier article sur Metrics, vous permettra d’avoir <strong>une vue d’ensemble des différentes métriques disponibles</strong>.</p>
+<p>Les trois autres articles de cette série porteront, dans l’ordre, sur <a href="/blog/2013/10/11/metrics-pour-mesurer-efficacement-les-performances-integration-avec-jee/">l’intégration de Metrics dans une application web JEE</a>, <a href="/blog/2013/10/11/metrics-pour-mesurer-efficacement-les-performances-integration-avec-spring-et-guice/">l’intégration de Metrics avec spring et guice</a> et <a href="/blog/2013/10/11/metrics-pour-mesurer-efficacement-les-performances-integration-avec-JDBC-logback-et-jersey/">l’intégration de Metrics avec JDBC, logback et jersey</a>.</p>
+<h2 id="References"><a href="#References" class="headerlink" title="Références"></a>Références</h2><ul>
+<li><a href="http://metrics.codahale.com/manual/core/" target="_blank" rel="external">Metrics</a></li>
+<li><a href="https://github.com/clescot/metrics-example" target="_blank" rel="external">application example liée à cette série d’articles</a></li>
+</ul>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/blog/blog/categories/performance/">performance</a>, <a href="/blog/blog/categories/performance/mesure/">mesure</a>, <a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a>
+  </div>
+
+        
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Commentaires</h1>
+
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Recherche">
+    <input type="hidden" name="q" value="site:clescot.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Catégories</h3>
+  <ul class="entry">
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/">JDBC</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JEE/">JEE</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/">JSON</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/">TDD</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/">big data</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/">cli</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/">communication</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/communication/">communication</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/">concurrence</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/">debug</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/">debug</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/">devops</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/git/">git</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/guice/">guice</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/">hook</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/">intégration continue</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/jersey/">jersey</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/">jsp</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/">kafka</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/">kafkacat</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/">logback</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/">logs</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/">mesure</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/">multithread</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/">organisation</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/outil/">outil</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/">parallèle</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/">performance</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/">productivité</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/">push</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/">scaleway</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/">spring</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/">swarm mode</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/tag/">tag</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/">tempus-fugit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/">terraform</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/">testng</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/testrule/">testrule</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/tests/">tests</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/">thread-safe</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/ubuntu/">ubuntu</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/">variables</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/">web</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/">web</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+
+  
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 Charles Lescot
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/blog/js/jquery.imagesloaded.min.js"></script>
+<script src="/blog/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

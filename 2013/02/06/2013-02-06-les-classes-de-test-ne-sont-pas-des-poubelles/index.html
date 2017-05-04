@@ -1,0 +1,371 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Les Classes De Test Ne Sont Pas Des Poubelles !  | Le blog de Charles Lescot.</title>
+  <meta name="author" content="Charles Lescot">
+  
+  <meta name="description" content="Blog sur Java, le web, et les méthodes agiles.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Les Classes De Test Ne Sont Pas Des Poubelles ! "/>
+  <meta property="og:site_name" content="Le blog de Charles Lescot."/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/blog/favicon.png" rel="icon">
+  <link rel="alternate" href="/blog/atom.xml" title="Le blog de Charles Lescot." type="application/atom+xml">
+  <link rel="stylesheet" href="/blog/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/blog/">Le blog de Charles Lescot.</a></h1>
+  <h2><a href="/blog/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/blog/">Home</a></li>
+    
+      <li><a href="/blog/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-02-06T00:03:00.000Z"><a href="/blog/2013/02/06/2013-02-06-les-classes-de-test-ne-sont-pas-des-poubelles/">06/02/13</a></time>
+      
+      
+  
+    <h1 class="title">Les Classes De Test Ne Sont Pas Des Poubelles ! </h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <img src="/blog/images/sign-34163_150.png" class="right" width="149" height="150" title="poubelle">
+<h2 id="…-ou-comment-structurer-ses-tests-unitaires"><a href="#…-ou-comment-structurer-ses-tests-unitaires" class="headerlink" title="… ou comment structurer ses tests unitaires."></a>… ou comment structurer ses tests unitaires.</h2><p>#Résumé<br>Je suis souvent confronté à des classes de test d’une longueur <strong>gigantesque</strong> dans les projets où j’interviens.<br>Leur contenu en un seul bloc est souvent illisible, quelquefois désorganisé et difficilement maintenable.</p>
+<p>J’aborde dans cet article, différentes solutions d’organisation de ses classes de tests en les comparant.</p>
+<p>##La solution proposée</p>
+<p>Je propose d’organiser les tests via des <strong>classes statiques internes</strong> couplées à de l’héritage. Vous pourrez regrouper<br> vos méthodes de test par méthode testée, les exécuter sélectivement et rendre lisible la classe de test.</p>
+<p>#Constat</p>
+<p>Les classes de test sont, quand les tests sont nombreux, très longues.<br>Il est difficile de les appréhender d’un seul coup d’oeil.</p>
+<p>Pour tester une méthode avec <a href="http://www.junit.org" target="_blank" rel="external">Junit</a>, on crée une nouvelle méthode<br>dans la classe de test pour chaque nouveau cas d’usage.</p>
+<p>Ainsi, les nombreux cas de test impliquent de créer <strong>beaucoup</strong> de méthodes de test.</p>
+<p>##Conséquence</p>
+<p>Il est difficile de :</p>
+<ul>
+<li>retrouver tous les cas de test d’une méthode</li>
+<li>identifier les cas de test récurrents</li>
+<li>lancer uniquement tous les cas de test d’une méthode</li>
+<li>avoir une vue d’ensemble de la classe de test</li>
+</ul>
+<p>##Exemple<br>Voici la classe <code>Foo.java</code> à tester :</p>
+{% codeblock lang:java %}
+
+    public class Foo {
+
+        public int add(Integer a,Integer b){
+        	return a.intValue()+b.intValue();
+    	}
+
+    	public int substract(Integer a,Integer b){
+        	return a.intValue()-b.intValue();
+    	}
+    }
+{% endcodeblock %}
+<p>Cette classe ne comporte que deux méthodes, prenant chacune deux paramètres.</p>
+<p>Malgré sa simplicité, celle-ci comprend pour chaque méthode de nombreux cas à tester :</p>
+<ul>
+<li>les paramètres sont null</li>
+<li>un des paramètres est null</li>
+<li>les paramètres sont négatifs</li>
+<li>les paramètres sont positifs</li>
+<li>les paramètres sont pour le premier négatif, pour l’autre positif</li>
+<li>les paramètres sont pour le premier positif, pour l’autre négatif</li>
+<li>le résultat est négatif</li>
+<li>le résultat est positif</li>
+<li>le résultat est égal à zéro</li>
+<li>le résultat dépasse la limite inférieure du type <em>Integer</em></li>
+<li>le résultat dépasse la limite supérieure du type <em>Integer</em></li>
+<li>etc…</li>
+</ul>
+<p>En résulte ainsi, un code <strong>illisible</strong> (je vous épargne le code complet) :</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="keyword">import</span> org.junit.Test;</div><div class="line"><span class="keyword">import</span> <span class="keyword">static</span> org.hamcrest.CoreMatchers.is;</div><div class="line"><span class="keyword">import</span> <span class="keyword">static</span> org.junit.Assert.assertThat;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FooTest</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> Foo foo = <span class="keyword">new</span> Foo();</div><div class="line"></div><div class="line">    <span class="meta">@Test</span>(expected = NullPointerException.class)</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testAdd_withNullArguments</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">        foo.add(<span class="keyword">null</span>, <span class="keyword">null</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Test</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testAdd_withPositiveArguments</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">        <span class="keyword">int</span> result = foo.add(<span class="number">3</span>, <span class="number">4</span>);</div><div class="line">        assertThat(result,is(<span class="number">7</span>));</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    ......</div><div class="line">    ......</div><div class="line">    ......</div><div class="line"></div><div class="line">    <span class="meta">@Test</span>(expected = NullPointerException.class)</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testSubstract_withNullArguments</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">        foo.substract(<span class="keyword">null</span>, <span class="keyword">null</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Test</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testSubstract_withPositiveArguments</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">        <span class="keyword">int</span> result = foo.substract(<span class="number">3</span>, <span class="number">4</span>);</div><div class="line">        assertThat(result,is(-<span class="number">1</span>));</div><div class="line">    &#125;</div><div class="line">    ......</div><div class="line">    ......</div><div class="line">    ......</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h2 id="Diviser-le-code-pour-mieux-regner"><a href="#Diviser-le-code-pour-mieux-regner" class="headerlink" title="Diviser (le code) pour mieux régner"></a>Diviser (le code) pour mieux régner</h2><p>Face à une classe qui grossit à outrance, il est nécessaire de répartir les cas de tests, par exemple suivant la méthode testée.</p>
+<p>Essayons de lister les possibilités pour regrouper les cas de test d’une même méthode.</p>
+<h3 id="Des-debuts-d’organisation-les-commentaires"><a href="#Des-debuts-d’organisation-les-commentaires" class="headerlink" title="Des débuts d’organisation : les commentaires"></a>Des débuts d’organisation : les commentaires</h3><p>Pour mieux organiser ses tests, beaucoup insèrent des commentaires comme repères.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"></div><div class="line"><span class="comment">////////////// début des tests de la méthode 'add'</span></div><div class="line">.......</div><div class="line">.......</div><div class="line"><span class="comment">///////////// fin des tests de la méthode 'add'</span></div><div class="line"><span class="comment">////////////// début des tests de la méthode 'substract'</span></div><div class="line">.......</div><div class="line">.......</div><div class="line"><span class="comment">///////////// fin des tests de la méthode 'substract'</span></div></pre></td></tr></table></figure>
+<h4 id="Avantages"><a href="#Avantages" class="headerlink" title="Avantages"></a>Avantages</h4><p>Les méthodes comprises entre les blocs de commentaires sont regroupées et associées à la méthode testée.</p>
+<h4 id="Inconvenients"><a href="#Inconvenients" class="headerlink" title="Inconvénients"></a>Inconvénients</h4><p>Cette solution :</p>
+<ul>
+<li>rajoute beaucoup de bruit dans la lisibilité de la classe</li>
+<li>ne resiste pas au reformatage du code effectué avec certains éditeurs de texte</li>
+<li>ne permet pas de ne choisir d’exécuter qu’un sous-ensemble des tests unitaires</li>
+</ul>
+<p>Dans la même optique, <a href="https://sites.google.com/site/unclebobconsultingllc/" target="_blank" rel="external">Robert Martin (Uncle Bob)</a>,<br>dans son <a href="http://www.amazon.fr/gp/product/0132350882/ref=as_li_qf_sp_asin_tl?ie=UTF8&amp;camp=1642&amp;creative=6746&amp;creativeASIN=0132350882&amp;linkCode=as2&amp;tag=clescotcom08-21" target="_blank" rel="external">livre <em>Clean Code</em></a>,<br> insiste sur l’importance de la lisibilité du code, et recommande d’éviter d’encombrer celui-ci avec ce genre de commentaires. Les commentaires ne permettent pas une bonne orgnaisation du code.</p>
+<h3 id="Pas-de-regions-a-la-NET-en-Java"><a href="#Pas-de-regions-a-la-NET-en-Java" class="headerlink" title="Pas de régions à la .NET en Java"></a>Pas de régions <em>à la .NET</em> en Java</h3>{% pullquote %}
+
+A noter que du côté .NET, les directives de régions ont été ajoutées à destination des éditeurs, pour qu'ils puissent
+cacher ou afficher des parties de code. Les régions sont présentes dans le code source, mais pas dans le MSIL (équivalent du *bytecode* Java).
+Cette fonctionnalité a donc uniquement pour but d'améliorer la lisibilité, mais ne permet pas de raffiner l'exécution
+des tests. {"Les régions .NET ne résolvent pas les problèmes d'organisation, et ne sont pas disponible du côté java."}
+
+{% endpullquote %}
+<h3 id="Une-fausse-bonne-idee-les-categories-Junit"><a href="#Une-fausse-bonne-idee-les-categories-Junit" class="headerlink" title="Une fausse bonne idée : les catégories Junit"></a>Une fausse bonne idée : les catégories Junit</h3><p><a href="http://kentbeck.github.com/junit/doc/ReleaseNotes4.8.html" target="_blank" rel="external">Depuis junit 4.8</a>, il est possible d’ajouter des annotations,<br>afin de regrouper des méthodes (ou des classes) de test en catégories (des sortes de tags).<br>Plusieurs catégories peuvent être ajoutées à une même méthode ou classe.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FooTestWithCategories</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> Foo foo = <span class="keyword">new</span> Foo();</div><div class="line"></div><div class="line">    <span class="meta">@Category</span>(Add.class)</div><div class="line">    <span class="meta">@Test</span>(expected = NullPointerException.class)</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testAdd_withNullArguments</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">        foo.add(<span class="keyword">null</span>, <span class="keyword">null</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Category</span>(Add.class)</div><div class="line">    <span class="meta">@Test</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testAdd_withPositiveArguments</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">        <span class="keyword">int</span> result = foo.add(<span class="number">3</span>, <span class="number">4</span>);</div><div class="line">        assertThat(result,is(<span class="number">7</span>));</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Category</span>(Substract.class)</div><div class="line">    <span class="meta">@Test</span>(expected = NullPointerException.class)</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testSubstract_withNullArguments</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">        foo.substract(<span class="keyword">null</span>, <span class="keyword">null</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Category</span>(Substract.class)</div><div class="line">    <span class="meta">@Test</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testSubstract_withPositiveArguments</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">        <span class="keyword">int</span> result = foo.substract(<span class="number">3</span>, <span class="number">4</span>);</div><div class="line">        assertThat(result,is(-<span class="number">1</span>));</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h4 id="Avantages-1"><a href="#Avantages-1" class="headerlink" title="Avantages"></a>Avantages</h4><p>Les catégories Junit :</p>
+<ul>
+<li>rattachent les tests aux méthodes testées.</li>
+<li>permettent de lancer l’exécution de tous les tests d’une méthode particulière, via un Runner Junit nommé <code>Categories</code>, et une sélection des tests via <code>@Categories.IncludeCategory</code>.</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="meta">@RunWith</span>(Categories.class)</div><div class="line"><span class="meta">@Categories</span>.IncludeCategory(Add.class)</div><div class="line"><span class="meta">@Suite</span>.SuiteClasses( &#123;FooTestWithCategories.class &#125;)</div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyTestSuite</span> </span>&#123;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h4 id="Inconvenients-1"><a href="#Inconvenients-1" class="headerlink" title="Inconvénients"></a>Inconvénients</h4><p>Les catégories Junit :</p>
+<ul>
+<li>ne permettent pas d’isoler les tests d’une méthode par rapport aux autres :<br>les tests peuvent avoir les bonnes catégories, mais être éparpillés au sein d’une grande classe de test…</li>
+<li>elles nécessitent un Runner Junit particulier <em>Categories</em>.Elles ne permettent pas d’utiliser d’autres<br>Runner Junit (un seul Runner est spécifié par exécution).</li>
+<li>l’isolation des cas de test récurrents n’est pas encouragé par cette option.</li>
+</ul>
+<p>Les catégories Junit sont plutôt à utiliser pour différencier l’exécution de tests en fonction soit<br>de leurs dépendances techniques externes (tests d’intégration),de leur rapidité, ou d’un autre critère <strong>non fonctionnel</strong>.</p>
+<h3 id="La-solution-proposee-utilisation-des-classes-internes"><a href="#La-solution-proposee-utilisation-des-classes-internes" class="headerlink" title="La solution proposée : utilisation des classes internes"></a>La solution proposée : utilisation des classes internes</h3><p><a href="http://www.junit.org/node/401" target="_blank" rel="external">Junit 4.5</a> apporte l’utilisation d’un Runner permettant de lancer des tests présents<br>dans des <strong>classes statiques internes</strong>:<br><em>Enclosed</em>, qui est présent dans un package <em>expérimental</em> (org.junit.experimental.runners.Enclosed).</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">   <span class="meta">@RunWith</span>(Enclosed.class)</div><div class="line">   <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FooTestWithEnclosed</span> </span>&#123;</div><div class="line"><span class="keyword">private</span> Foo foo = <span class="keyword">new</span> Foo();</div><div class="line"></div><div class="line">       <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Add</span> </span>&#123;</div><div class="line">           <span class="keyword">private</span> Foo foo = <span class="keyword">new</span> Foo();</div><div class="line"></div><div class="line">           <span class="meta">@Test</span>(expected = NullPointerException.class)</div><div class="line">           <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testWithNullArguments</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">               foo.add(<span class="keyword">null</span>, <span class="keyword">null</span>);</div><div class="line">           &#125;</div><div class="line"></div><div class="line">           <span class="meta">@Test</span></div><div class="line">           <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testwithPositiveArguments</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">               <span class="keyword">int</span> result = foo.add(<span class="number">3</span>, <span class="number">4</span>);</div><div class="line">               assertThat(result,is(<span class="number">7</span>));</div><div class="line">           &#125;</div><div class="line">       &#125;</div><div class="line"></div><div class="line">       <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Substract</span> </span>&#123;</div><div class="line">           <span class="keyword">private</span> Foo foo = <span class="keyword">new</span> Foo();pens</div><div class="line">           <span class="meta">@Test</span>(expected = NullPointerException.class)</div><div class="line">           <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testWithNullArguments</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">               foo.substract(<span class="keyword">null</span>, <span class="keyword">null</span>);</div><div class="line">           &#125;</div><div class="line"></div><div class="line">           <span class="meta">@Test</span></div><div class="line">           <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testwithPositiveArguments</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">               <span class="keyword">int</span> result = foo.substract(<span class="number">3</span>, <span class="number">4</span>);</div><div class="line">               assertThat(result,is(-<span class="number">1</span>));</div><div class="line">           &#125;</div><div class="line">       &#125;</div><div class="line">   &#125;</div></pre></td></tr></table></figure>
+<h4 id="Avantages-2"><a href="#Avantages-2" class="headerlink" title="Avantages"></a>Avantages</h4><ul>
+<li>rassemble dans une structure toutes les méthodes de tests liées à une méthode testée</li>
+<li>permet d’exécuter sélectivement les cas de test d’une méthode</li>
+</ul>
+<h4 id="Inconvenients-2"><a href="#Inconvenients-2" class="headerlink" title="Inconvénients"></a>Inconvénients</h4><ul>
+<li>le runner Junit est présent dans un package au nom qui implique une existence peu pérenne (<code>experimental</code>)</li>
+<li>le runner ne lance que des méthodes présentes dans des classes statiques internes. Cet inconvénient ne semble pas gênant, car il semble rarement souhaitable de mélanger des organisations         différentes (classes statiques internes et présence directe des méthodes) au sein d’une même classe.</li>
+</ul>
+<h3 id="Ameliorer-la-solution-heritage-couple-aux-classes-statiques-internes"><a href="#Ameliorer-la-solution-heritage-couple-aux-classes-statiques-internes" class="headerlink" title="Améliorer la solution : héritage couplé aux classes statiques internes"></a>Améliorer la solution : héritage couplé aux classes statiques internes</h3><p>On vient de voir l’intérêt d’utiliser les <strong>classes statiques internes</strong> pour regrouper les cas de test d’une méthode.<br>Afin de clarifier les cas de test récurrents à implémenter pour toute nouvelle méthode, nous pouvons utiliser<br>des <strong>interfaces internes</strong> dont héritera toute nouvelle classe statique interne.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"></div><div class="line"><span class="meta">@RunWith</span>(Enclosed.class)</div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FooTestWithEnclosedAndInheritance</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> Foo foo = <span class="keyword">new</span> Foo();</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="class"><span class="keyword">interface</span> <span class="title">MyTest</span> </span>&#123;</div><div class="line">        <span class="function"><span class="keyword">void</span> <span class="title">testWithNullArguments</span><span class="params">()</span></span>;</div><div class="line">        <span class="function"><span class="keyword">void</span> <span class="title">testWithPositiveArguments</span><span class="params">()</span></span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Add</span> <span class="keyword">implements</span> <span class="title">MyTest</span> </span>&#123;</div><div class="line">        <span class="keyword">private</span> Foo foo = <span class="keyword">new</span> Foo();</div><div class="line"></div><div class="line">        <span class="meta">@Test</span>(expected = NullPointerException.class)</div><div class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testWithNullArguments</span><span class="params">()</span> </span>&#123;</div><div class="line">            foo.add(<span class="keyword">null</span>, <span class="keyword">null</span>);</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="meta">@Test</span></div><div class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testWithPositiveArguments</span><span class="params">()</span></span>&#123;</div><div class="line">            <span class="keyword">int</span> result = foo.add(<span class="number">3</span>, <span class="number">4</span>);</div><div class="line">            assertThat(result,is(<span class="number">7</span>));</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Substract</span> <span class="keyword">implements</span> <span class="title">MyTest</span> </span>&#123;</div><div class="line">        <span class="keyword">private</span> Foo foo = <span class="keyword">new</span> Foo();</div><div class="line">        <span class="meta">@Test</span>(expected = NullPointerException.class)</div><div class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testWithNullArguments</span><span class="params">()</span></span>&#123;</div><div class="line">            foo.substract(<span class="keyword">null</span>, <span class="keyword">null</span>);</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="meta">@Test</span></div><div class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testWithPositiveArguments</span><span class="params">()</span></span>&#123;</div><div class="line">            <span class="keyword">int</span> result = foo.substract(<span class="number">3</span>, <span class="number">4</span>);</div><div class="line">            assertThat(result,is(-<span class="number">1</span>));</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h4 id="Avantages-3"><a href="#Avantages-3" class="headerlink" title="Avantages"></a>Avantages</h4><ul>
+<li>Utilise une classe statique interne pour regrouper des cas de test, permet d’utiliser l’héritage pour homogénéiser<br>l’implémentation de cas de test récurrents. </li>
+<li>évite la duplication de code.</li>
+</ul>
+<h3 id="Inconvenients-3"><a href="#Inconvenients-3" class="headerlink" title="Inconvénients"></a>Inconvénients</h3><ul>
+<li>si vous utilisez une classe abstraite qui n’a pas de méthodes de test, il est possible que le Runner Junit vous lance une exception.<br>Pour régler ce problème, il faut ajouter l’annotation <em>@Ignore</em> à la classe.</li>
+</ul>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>Arrêtons d’ignorer les bonnes pratiques de développement dans les tests, avec pour pretexte que ce code n’ira<br>pas en production ! Le code de test n’est pas du code jetable, mais est intimement lié au code qui sera déployé.</p>
+<p><strong>Les qualités du code de test et de production doivent être du même niveau.</strong></p>
+<p>Utilisons les structures du langage disponibles comme les <strong>classes statiques internes</strong> pour répartir les cas de test, et <strong>l’héritage</strong> pour identifier<br>les cas de test récurrents.<br>La non-répétition du code, sa lisibilité, et sa structure cohérente, permettent d’écrire des tests plus robustes,<br>plus maintenables et compréhensibles !</p>
+<h2 id="References"><a href="#References" class="headerlink" title="Références"></a>Références</h2><ul>
+<li><a href="http://www.junit.org" target="_blank" rel="external">Junit</a></li>
+<li><a href="http://www.junit.org/node/401" target="_blank" rel="external">Junit 4.5</a></li>
+<li><a href="http://kentbeck.github.com/junit/doc/ReleaseNotes4.8.html" target="_blank" rel="external">Junit 4.8</a></li>
+<li><a href="http://www.amazon.fr/gp/product/0132350882/ref=as_li_tf_tl?ie=UTF8&amp;camp=1642&amp;creative=6746&amp;creativeASIN=0132350882&amp;linkCode=as2&amp;tag=clescotcom-21" target="_blank" rel="external">clean code</a></li>
+</ul>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/blog/blog/categories/junit/">junit</a>, <a href="/blog/blog/categories/junit/java/">java</a>, <a href="/blog/blog/categories/junit/java/tdd/">tdd</a>, <a href="/blog/blog/categories/junit/java/tdd/organisation/">organisation</a>, <a href="/blog/blog/categories/junit/java/tdd/organisation/test/">test</a>
+  </div>
+
+        
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Commentaires</h1>
+
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Recherche">
+    <input type="hidden" name="q" value="site:clescot.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Catégories</h3>
+  <ul class="entry">
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/">JDBC</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JEE/">JEE</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/">JSON</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/">TDD</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/">big data</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/">cli</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/">communication</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/communication/">communication</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/">concurrence</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/">debug</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/">debug</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/">devops</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/git/">git</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/guice/">guice</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/">hook</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/">intégration continue</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/jersey/">jersey</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/">jsp</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/">kafka</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/">kafkacat</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/">logback</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/">logs</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/">mesure</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/">multithread</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/">organisation</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/outil/">outil</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/">parallèle</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/">performance</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/">productivité</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/">push</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/">scaleway</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/">spring</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/">swarm mode</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/tag/">tag</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/">tempus-fugit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/">terraform</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/">testng</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/testrule/">testrule</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/tests/">tests</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/">thread-safe</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/ubuntu/">ubuntu</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/">variables</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/">web</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/">web</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+
+  
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 Charles Lescot
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/blog/js/jquery.imagesloaded.min.js"></script>
+<script src="/blog/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

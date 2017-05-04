@@ -1,0 +1,321 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Metrics Pour Mesurer Efficacement Les Performances : Intégration Avec JEE | Le blog de Charles Lescot.</title>
+  <meta name="author" content="Charles Lescot">
+  
+  <meta name="description" content="Blog sur Java, le web, et les méthodes agiles.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Metrics Pour Mesurer Efficacement Les Performances : Intégration Avec JEE"/>
+  <meta property="og:site_name" content="Le blog de Charles Lescot."/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/blog/favicon.png" rel="icon">
+  <link rel="alternate" href="/blog/atom.xml" title="Le blog de Charles Lescot." type="application/atom+xml">
+  <link rel="stylesheet" href="/blog/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/blog/">Le blog de Charles Lescot.</a></h1>
+  <h2><a href="/blog/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/blog/">Home</a></li>
+    
+      <li><a href="/blog/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-11T03:01:00.000Z"><a href="/blog/2013/10/11/2013-10-11-metrics-pour-mesurer-efficacement-les-performances-integration-avec-jee/">11/10/13</a></time>
+      
+      
+  
+    <h1 class="title">Metrics Pour Mesurer Efficacement Les Performances : Intégration Avec JEE</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h2 id="Presentation-de-Metrics"><a href="#Presentation-de-Metrics" class="headerlink" title="Présentation de Metrics"></a>Présentation de Metrics</h2><p>Je vous propose dans cette série de 4 articles, de vous présenter la librairie <a href="https://github.com/codahale/metrics" target="_blank" rel="external">Metrics</a>,<br>initié par la société <a href="https://www.yammer.com/" target="_blank" rel="external">Yammer</a>.<br>Celle-ci permet de fournir des métriques au niveau applicatif et JVM.</p>
+<p>Ce deuxième article, présente l’intégration de Metrics dans une application web JEE.<br>A noter que l’intégration proposée n’inclut pas, à des fins pédagogiques, une intégration facilitée via Spring ou Guice, comme c’est le cas dans <a href="/blog/2013/10/11/metrics-pour-mesurer-efficacement-les-performances-integration-avec-spring-guice-logback-et-jersey/">le troisième article de la série</a>.</p>
+<h2 id="Integration-dans-une-webapp"><a href="#Integration-dans-une-webapp" class="headerlink" title="Intégration dans une webapp"></a>Intégration dans une webapp</h2><p><a href="https://github.com/clescot/metrics-example" target="_blank" rel="external">Un exemple d’application web monitoré avec Metrics</a> est fourni en complément de cet article.</p>
+<h3 id="Enregistrement-du-registre-Metrics-dans-le-scope-application"><a href="#Enregistrement-du-registre-Metrics-dans-le-scope-application" class="headerlink" title="Enregistrement du registre Metrics dans le scope application"></a>Enregistrement du registre Metrics dans le scope application</h3><p>Lors du démarrage de l’application JEE, il est nécessaire d’enregistrer dans le scope <strong>application</strong> (<em>i.e</em> le <em>servletContext</em>), le registre Metrics, pour qu’il soit disponible pour toutes les classes.<br>Nous utiliserons pour cette tâche, un <em>ContextListener</em>, qui est justement exécuté au démarrage de l’application.</p>
+<p>Pour faciliter le partage du registre, Metrics fournit un module de classes utilitaires pour les applications JEE, intitulé <code>metrics-servlet</code>.</p>
+<p>Installez-donc celui-ci dans votre fichier maven <code>pom.xml</code>.</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.codahale.metrics<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>metrics-servlet<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div></pre></td></tr></table></figure>
+<p>Une fois cette dépendance installée, vous pouvez étendre le <code>InstrumentedFilterContextListener</code> pour vous faciliter la tâche comme suit : </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> com.clescot.rest;</div><div class="line"></div><div class="line"><span class="keyword">import</span> com.codahale.metrics.MetricRegistry;</div><div class="line"><span class="keyword">import</span> com.codahale.metrics.servlet.InstrumentedFilterContextListener;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MetricsListener</span> <span class="keyword">extends</span> <span class="title">InstrumentedFilterContextListener</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> MetricRegistry METRIC_REGISTRY = <span class="keyword">new</span> MetricRegistry();</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">protected</span> MetricRegistry <span class="title">getMetricRegistry</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> METRIC_REGISTRY;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>L’installation de la classe MetricsListener effectuée dans votre fichier <code>web.xml</code> comme suit, vous pouvez utiliser les différentes métriques listées dans <a href="/blog/2013/10/11/metrics-pour-mesurer-efficacement-les-performances-les-bases/">le premier article de cette série</a> (jauge, compteur, mesure, histogramme, timer etc…).</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">...</div><div class="line">...</div><div class="line"> <span class="tag">&lt;<span class="name">listener</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">listener-class</span>&gt;</span>com.clescot.rest.MetricsListener<span class="tag">&lt;/<span class="name">listener-class</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">listener</span>&gt;</span></div><div class="line">...</div><div class="line">...</div></pre></td></tr></table></figure>
+<p>Veuillez noter que le module <code>metrics-servlet</code>, n’est pas à confondre avec <code>metrics-servlets</code> évoqué plus loin dans cet article.</p>
+<p>Une alternative, présentée dans <a href="/blog/2013/10/11/metrics-pour-mesurer-efficacement-les-performances-integration-avec-spring-et-guice/">le troisième article de cette série</a>, est l’initialisation et l’injection du registre via un container d’injection de dépendances comme <a href="http://projects.spring.io/spring-framework/" target="_blank" rel="external">Spring</a> ou <a href="http://code.google.com/p/google-guice/" target="_blank" rel="external">Guice</a> (<a href="">l’application web exemple</a> utilise Guice). </p>
+<h3 id="Health-check"><a href="#Health-check" class="headerlink" title="Health check"></a>Health check</h3><p>Metrics permet aussi d’intégrer un système de “Health check”, afin de surveiller, via des appels du répartiteur de charge (<em>load-balancer</em>), les composants externes sur lesquels repose l’application, tels la base de données, ou le moteur de recherche par exemple.<br>Cela permet d’avoir une idée précise, de la fiabilité de ces composants, et donc de travailler sur la tolérance de l’application aux pannes de ceux-ci.</p>
+<p>Cette intégration est réalisée par le module maven intitulé <strong>metrics-healthchecks</strong>.<br>Rajoutez donc dans votre fichier maven <code>pom.xml</code>, la dépendance suivante : </p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.codahale.metrics<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>metrics-healthchecks<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div></pre></td></tr></table></figure>
+<p>Puis il faut étendre la class HealthCheck pour en créer un :</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> com.clescot.rest;</div><div class="line"></div><div class="line"><span class="keyword">import</span> com.codahale.metrics.core.HealthCheck;</div><div class="line"></div><div class="line"><span class="keyword">import</span> javax.inject.Inject;</div><div class="line"><span class="keyword">import</span> javax.sql.DataSource;</div><div class="line"><span class="keyword">import</span> java.sql.Connection;</div><div class="line"><span class="keyword">import</span> java.sql.ResultSet;</div><div class="line"><span class="keyword">import</span> java.sql.SQLException;</div><div class="line"><span class="keyword">import</span> java.sql.Statement;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DatabaseHealthCheck</span> <span class="keyword">extends</span> <span class="title">HealthCheck</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String DATABASE_HEALTH_CHECK_NAME = <span class="string">"database"</span>;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> DataSource datasource;</div><div class="line"></div><div class="line">    <span class="meta">@Inject</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="title">DatabaseHealthCheck</span><span class="params">(DataSource datasource)</span> </span>&#123;</div><div class="line">        <span class="keyword">super</span>(<span class="string">"com.clescot.rest.DatabaseHealthCheck"</span>);</div><div class="line">        <span class="keyword">this</span>.datasource = datasource;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">protected</span> Result <span class="title">check</span><span class="params">()</span> <span class="keyword">throws</span> SQLException </span>&#123;</div><div class="line"></div><div class="line">        HealthCheck.Result result;</div><div class="line">        <span class="keyword">try</span> (Connection connection = datasource.getConnection()) &#123;</div><div class="line">            Statement statement;</div><div class="line">            ResultSet resultSet;</div><div class="line">            statement = connection.createStatement();</div><div class="line">            resultSet = statement.executeQuery(<span class="string">"select 1 from dual"</span>);</div><div class="line">            <span class="keyword">if</span> (resultSet.next()) &#123;</div><div class="line">                result = Result.healthy(<span class="string">"'select 1 from dual' : OK"</span>);</div><div class="line">            &#125; <span class="keyword">else</span> &#123;</div><div class="line">                result = Result.unhealthy(<span class="string">"la requête 'select 1 from dual' retourne un résultat vide : KO"</span>);</div><div class="line">            &#125;</div><div class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</div><div class="line">            result = HealthCheck.Result.unhealthy(<span class="string">"'select 1 from dual' : KO "</span>, t);</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="keyword">return</span> result;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>La création et l’enregistrement dans le registre de Metrics du healthcheck peut se faire dans la classe MetricsListener présentée précédemment. Le datasource pourra être récupérée si besoin, via JNDI. </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">registry.register(<span class="string">"database"</span>, <span class="keyword">new</span> DatabaseHealthCheck(datasource));</div></pre></td></tr></table></figure>
+<p>Enfin, il faut enregistrer dans le fichier <code>web.xml</code>, la servlet appelant les différents healthChecks enregistrés dans le registre, c’est-à-dire la healthCheckServlet :</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">...</div><div class="line">	&lt;servlet&gt;</div><div class="line">&lt;servlet-name&gt;healthcheck&lt;/servlet-name&gt;</div><div class="line">&lt;servlet-class&gt;com.codahale.metrics.servlets.HealthCheckServlet&lt;&lt;/servlet-class&gt;</div><div class="line">&lt;load-on-startup&gt;1&lt;/load-on-startup&gt;</div><div class="line">&lt;/servlet&gt;</div><div class="line">...</div><div class="line"></div><div class="line">&lt;servlet-mapping&gt;</div><div class="line">&lt;servlet-name&gt;healthcheck&lt;/servlet-name&gt;</div><div class="line">&lt;url-pattern&gt;/healthcheck&lt;/url-pattern&gt;</div><div class="line">&lt;/servlet-mapping&gt;</div><div class="line">...</div></pre></td></tr></table></figure>
+<p>Le load balancer appelera donc l’url <a href="http://monapplication:8080/healthcheck" target="_blank" rel="external">http://monapplication:8080/healthcheck</a> à intervalles réguliers sur chaque instance de webapp pour s’assurer du bon fonctionnement de tous les noeuds du cluster. </p>
+<p>En cas de défaillance, l’instance en question sortira du pool d’instances utilisé pour répondre aux requêtes.</p>
+<h3 id="Exposition-des-mesures"><a href="#Exposition-des-mesures" class="headerlink" title="Exposition des mesures"></a>Exposition des mesures</h3><p>Une fois les mesures posées, il faut les exposer, pour pouvoir les visualiser, et donc les analyser. Ce sont les reporters  dans Metrics qui ont cette fonction d’exposition des métriques.</p>
+<h4 id="Via-JMX"><a href="#Via-JMX" class="headerlink" title="Via JMX"></a>Via JMX</h4><p>L’exposition des mesures Metrics, peut être réalisée via JMX (<strong>non conseillé par Metrics en production</strong>) par l’installation et l’initialisation d’un reporter spécifique de la façon suivante : </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">final</span> JmxReporter reporter = JmxReporter.forRegistry(registry).build();</div><div class="line">reporter.start();</div></pre></td></tr></table></figure>
+<p>Cette initialisation pourra aussi être effectuée dans le MetricsListener évoqué précédemment.</p>
+<p>L’utilisation d’outils tels <a href="http://docs.oracle.com/javase/7/docs/technotes/guides/management/jconsole.html" target="_blank" rel="external">jconsole</a>, ou <a href="http://visualvm.java.net/" target="_blank" rel="external">visualVM</a>, vous permettra de visualiser les mesures exposées sous forme de MBeans.</p>
+<p>Voici un exemple de visualisation des métriques JMX via visualVM :<br>{% img [center] /images/visualvm.png [métriques JMX via visualVM[métriques JMX via visualVM]] %}</p>
+<h4 id="Via-HTTP"><a href="#Via-HTTP" class="headerlink" title="Via HTTP"></a>Via HTTP</h4><p>Metrics fournit par défaut, pour les applications JEE, des servlets permettant de sérialiser en HTTP le contenu du registre Metrics.</p>
+<p>Pour obtenir ces servlets prêtes à l’emploi, il faut importer le module maven dans votre <code>pom.xml</code> :</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;dependency&gt;</div><div class="line">    &lt;groupId&gt;com.codahale.metrics&lt;/groupId&gt;</div><div class="line">    &lt;artifactId&gt;metrics-servlets&lt;/artifactId&gt;</div><div class="line">    &lt;version&gt;3.0.1&lt;/version&gt;</div><div class="line">&lt;/dependency&gt;</div></pre></td></tr></table></figure>
+<p>Le module dédie expose les servlets suivantes : </p>
+<ul>
+<li><code>MetricsServlet</code>: expose les mesures via un objet JSON</li>
+</ul>
+<p>Voici un exemple du rendu de cette servlet :<br>{% img [center] /images/metrics-http.png [métriques JSON[métriques JSON via MetricsServlet]] %}</p>
+<ul>
+<li><code>HealthCheckServlet</code> : répond aux requêtes GET en exécutant tous les healthChecks enregistrés dans le registre. Cette classe est utile pour les loadBalancers, pour ne rediriger les requêtes des clients que vers les serveurs en bonne santé. Un code HTTP 200 est retourné en cas de succès, un code HTTP 500 est retourné dans le cas inverse.</li>
+<li><code>ThreadDumpServlet</code> : renvoie une représentation textuelle de tous les threads en cours sur la JVM, c’est-à-dire leur état, leur stack trace, les verrous présents etc… Cette servlet est utile à des fins de diagnostic.</li>
+<li><code>AdminServlet</code> agrège les services des servlets précédemment listées.</li>
+</ul>
+<p>Les servlets listés sont certes très utiles pour exploiter une application ou aider au diagnostic d’un problème, mais elles ne sauraient être accessibles à tous. </p>
+<p>Il est donc nécessaire, soit via votre serveur web (apache, nginx etc..), soit via votre reverse proxy, ou votre firewall, d’empêcher un accès direct depuis l’extérieur. </p>
+<h4 id="via-d’autres-canaux"><a href="#via-d’autres-canaux" class="headerlink" title="via d’autres canaux"></a>via d’autres canaux</h4><p>d’autres reporters sont fournis par la librairie Metrics, pour exporter les métriques suivant différents canaux donc ceux-ci : </p>
+<ul>
+<li><code>ConsoleReporter</code> pour un export sur la sortie standard</li>
+<li><code>Slf4jReporter</code>pour un export via la façade de log <code>SLF4J</code></li>
+<li><code>GraphiteReporter</code> pour stocker de façon scalable et pseudo temps-réel les métriques</li>
+</ul>
+<h1 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h1><p>L’intégration de Metrics dans une application JEE est aisée. Nous verrons dans <a href="/blog/2013/10/11/metrics-pour-mesurer-efficacement-les-performances-integration-avec-spring-et-guice/">le prochain article de la série, une intégration facilitée via Spring ou Guice</a>.</p>
+<h2 id="References"><a href="#References" class="headerlink" title="Références"></a>Références</h2><ul>
+<li><a href="http://metrics.codahale.com/manual/core/" target="_blank" rel="external">Metrics</a></li>
+<li><a href="http://ryantenney.github.io/metrics-spring/" target="_blank" rel="external">Metrics-Spring</a></li>
+<li><a href="http://spring.io/" target="_blank" rel="external">Spring</a></li>
+<li><a href="http://code.google.com/p/google-guice/" target="_blank" rel="external">Guice</a></li>
+<li><a href="https://github.com/clescot/metrics-guice" target="_blank" rel="external">un repository Metrics-guice dépendant de Metrics 3.0.1</a></li>
+</ul>
+<ul>
+<li><a href="https://github.com/clescot/metrics-example" target="_blank" rel="external">application example liée à cette série d’articles</a></li>
+</ul>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/blog/blog/categories/performance/">performance</a>, <a href="/blog/blog/categories/performance/mesure/">mesure</a>, <a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a>, <a href="/blog/blog/categories/performance/mesure/metrique/JEE/">JEE</a>
+  </div>
+
+        
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Commentaires</h1>
+
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Recherche">
+    <input type="hidden" name="q" value="site:clescot.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Catégories</h3>
+  <ul class="entry">
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/">JDBC</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JEE/">JEE</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/">JSON</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/">TDD</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/">big data</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/">cli</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/">communication</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/communication/">communication</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/">concurrence</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/">debug</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/">debug</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/">devops</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/git/">git</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/guice/">guice</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/">hook</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/">intégration continue</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/jersey/">jersey</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/">jsp</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/">kafka</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/">kafkacat</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/">logback</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/">logs</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/">mesure</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/">multithread</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/">organisation</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/outil/">outil</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/">parallèle</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/">performance</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/">productivité</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/">push</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/">scaleway</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/">spring</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/">swarm mode</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/tag/">tag</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/">tempus-fugit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/">terraform</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/">testng</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/testrule/">testrule</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/tests/">tests</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/">thread-safe</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/ubuntu/">ubuntu</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/">variables</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/">web</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/">web</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+
+  
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 Charles Lescot
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/blog/js/jquery.imagesloaded.min.js"></script>
+<script src="/blog/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

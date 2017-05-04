@@ -1,0 +1,339 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Génération D&#39;une Image Scaleway en Vue D&#39;un Déploiement Terraform | Le blog de Charles Lescot.</title>
+  <meta name="author" content="Charles Lescot">
+  
+  <meta name="description" content="Blog sur Java, le web, et les méthodes agiles.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Génération D&#39;une Image Scaleway en Vue D&#39;un Déploiement Terraform"/>
+  <meta property="og:site_name" content="Le blog de Charles Lescot."/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/blog/favicon.png" rel="icon">
+  <link rel="alternate" href="/blog/atom.xml" title="Le blog de Charles Lescot." type="application/atom+xml">
+  <link rel="stylesheet" href="/blog/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/blog/">Le blog de Charles Lescot.</a></h1>
+  <h2><a href="/blog/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/blog/">Home</a></li>
+    
+      <li><a href="/blog/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2017-04-29T10:45:00.000Z"><a href="/blog/2017/04/29/2017-04-29-generation-image-scaleway-terraform/">29/04/17</a></time>
+      
+      
+  
+    <h1 class="title">Génération D&#39;une Image Scaleway en Vue D&#39;un Déploiement Terraform</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="Contexte"><a href="#Contexte" class="headerlink" title="Contexte"></a>Contexte</h1><p>Je vous propose dans cette série d’articles, d’installer un cluster docker Swarm Mode via Terraform chez l’hébergeur Scaleway.</p>
+<p>Celle-ci comprend 3 articles :</p>
+<ul>
+<li><a href="/2017/04/29/2017-04-28-interet-deploiement-cluster-swarm-mode-terraform/">l’intérêt de cette solution (ne contient pas d’éléments techniques)</a></li>
+<li><a href="/2017/04/29/2017-04-29-generation-image-scaleway-terraform/">la génération de l’image des serveurs Scaleway à déployer</a></li>
+<li><a href="/2017/04/29/2017-04-30-deployer-un-cluster-swarm-mode-sur-scaleway-via-terraform/">le déploiement via Terraform du cluster Docker Swarm Mode</a></li>
+</ul>
+<h1 id="generation-de-l’image-docker"><a href="#generation-de-l’image-docker" class="headerlink" title="génération de l’image docker"></a>génération de l’image docker</h1><p>Il est nécessaire d’utiliser une image, pour que le serveur Scaleway créé via Terraform puisse exécuter un système d’exploitation.<br>Scaleway propose de réutiliser le format de docker (Dockerfile), avec quelques adaptations, pour définir sa propre image.</p>
+<p>Pour cela, Scaleway fournit un repository github appelé <a href="https://github.com/scaleway/image-builder" target="_blank" rel="external">image builder</a>, permettant de construire une image iso suivant ses besoins, via un serveur Scaleway.<br>Des images sont fournies par la communauté et validées par l’hébergeur pour être disponibles pour tous, mais on ne peut pas dire que Scaleway soit d’une grande célérité pour les valider (ubuntu et la dernière version de docker ici), ou pour les fournir.</p>
+<p>À ce jour (avril 2017), l’image fournie ne contient que docker 1.12.2, soit 3 versions de retard…<br>Il est donc nécessaire de construire sa propre image.</p>
+<h2 id="creation-du-serveur-permettant-de-construire-son-image"><a href="#creation-du-serveur-permettant-de-construire-son-image" class="headerlink" title="création du serveur permettant de construire son image"></a>création du serveur permettant de construire son image</h2><p>Un préalable est bien sûr d’avoir un compte Scaleway.<br>La création d’un serveur de construction d’image peut être fait simplement via la ligne de commande de Scaleway appelée <a href="https://github.com/scaleway/scaleway-cli" target="_blank" rel="external">scw</a>.<br>Rappelons que la création de <strong>cette image est spécifique à cet hébergeur</strong>.</p>
+<p><code>scw</code> a été pensé pour ressembler à la ligne de commande docker. Vous retrouverez de nombreuses sous-commandes docker qui ont été reprises dans celle-ci.</p>
+<p>Identifiez-vous au préalable sur Scaleway via scw :<br><code>scw login</code> </p>
+<p><code>scw images</code> vous permet de lister les images disponibles, tant celles de la communauté scaleway que les vôtres.</p>
+<p>Vous retrouverez donc l’image dédiée à la construction d’images personnalisées appelée <em>image-builder</em>.</p>
+<p><code>scw run</code> vous permet de créer un serveur et le démarrer. Vous lancerez donc un nouveau serveur de création d’image via :</p>
+<p><code>scw run --name=&quot;mon-image-perso&quot; image-builder</code></p>
+<p>À noter que la construction du serveur n’est pas instantané (quelques minutes), il faudra donc être patient.</p>
+<p>Cette commande vous donnera de plus, une connexion ssh sur votre serveur nouvellement crée.</p>
+<p>Sur ce serveur, exécutez :</p>
+<p><code>image-builder-configure</code></p>
+<p>puis identifiez-vous via votre identifiant (mail) et votre mot de passe.<br>Cette étape préalable permettra, une fois l’image construite, de pousser l’image dans l’infrastructure Scaleway pour qu’elle soit disponible (uniquement pour notre compte), lors de la création de nouveaux serveurs (le but de ce second article).</p>
+<p>Le serveur nouvellement crée contient 2 fichiers d’exemple qui nous intéressent : <code>Makefile.sample</code> et <code>Dockerfile.sample</code>.</p>
+<p>Créez un répertoire dédié :</p>
+<p><code>mkdir myimage</code><br>copiez les fichiers d’exemple :</p>
+<p><code>cp Makefile.sample myimage/Makefile</code></p>
+<p>puis </p>
+<p><code>cp Dockerfile.sample myimage/Dockerfile</code></p>
+<p>et rentrez dans le répertoire:</p>
+<p><code>cd myimage</code></p>
+<h3 id="Makefile"><a href="#Makefile" class="headerlink" title="Makefile"></a>Makefile</h3><p>Ce fichier permet de définir :</p>
+<ul>
+<li>le nom de l’image à construire</li>
+<li>la version</li>
+<li>le titre</li>
+<li>la description</li>
+<li>l’architecture</li>
+<li>la taille du volume (espace disque) associé</li>
+<li>le nom du script à exécuter lors du démarrage du noyau linux</li>
+</ul>
+<p>Modifiez le fichier Makefile avec le descriptif, le nom et la version voulue.</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">NAME =                  my-image</div><div class="line">VERSION =               latest</div><div class="line">VERSION_ALIASES =       1.2.3 1.2 1</div><div class="line">TITLE =                 My image</div><div class="line">DESCRIPTION =           My image with Ubuntu and MySQL</div><div class="line">DOC_URL =</div><div class="line">SOURCE_URL =            https://github.com/scaleway-community/...</div><div class="line">VENDOR_URL =</div><div class="line">DEFAULT_IMAGE_ARCH =    x86_64</div><div class="line"></div><div class="line"></div><div class="line">IMAGE_VOLUME_SIZE =     50G</div><div class="line">IMAGE_BOOTSCRIPT =      stable</div><div class="line">IMAGE_NAME =            My image</div><div class="line"></div><div class="line"><span class="comment">## Image tools  (https://github.com/scaleway/image-tools)</span></div><div class="line"><span class="section">all:    docker-rules.mk</span></div><div class="line"><span class="section">docker-rules.mk:</span></div><div class="line">        wget -qO - https://j.mp/scw-builder | bash</div><div class="line"><span class="keyword">-include</span> docker-rules.mk</div></pre></td></tr></table></figure>
+<h3 id="Dockerfile"><a href="#Dockerfile" class="headerlink" title="Dockerfile"></a>Dockerfile</h3><p>Ce fichier permet de décrire les étapes d’installation de votre serveur, comme un fichier Dockerfile classique.<br>Néanmoins, des commentaires sont présents dans ce fichier, qui sont indispensables pour créer l’image sur plusieurs architectures : <strong>n’y touchez pas</strong>.</p>
+<h4 id="contenu"><a href="#contenu" class="headerlink" title="contenu"></a>contenu</h4><figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">FROM</span> scaleway/ubuntu:amd64-<span class="number">16.10</span></div><div class="line"><span class="comment"># following 'FROM' lines are used dynamically thanks do the image-builder</span></div><div class="line"><span class="comment"># which dynamically update the Dockerfile if needed.</span></div><div class="line"><span class="comment">#FROM scaleway/ubuntu:armhf-16.10       # arch=armv7l</span></div><div class="line"><span class="comment">#FROM scaleway/ubuntu:arm64-16.10       # arch=arm64</span></div><div class="line"><span class="comment">#FROM scaleway/ubuntu:i386-16.10        # arch=i386</span></div><div class="line"><span class="comment">#FROM scaleway/ubuntu:mips-16.10        # arch=mips</span></div><div class="line"></div><div class="line"><span class="comment"># Prepare rootfs</span></div><div class="line"><span class="keyword">RUN</span><span class="bash"> /usr/<span class="built_in">local</span>/sbin/scw-builder-enter</span></div><div class="line"></div><div class="line"><span class="comment"># Add your commands here (before scw-builder-leave and after scw-builder-enter)</span></div><div class="line"><span class="keyword">RUN</span><span class="bash"> sudo apt-get install -y \</span></div><div class="line">    apt-transport-https \</div><div class="line">    ca-certificates \</div><div class="line">    curl \</div><div class="line">    software-properties-common</div><div class="line"><span class="keyword">RUN</span><span class="bash"> curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -</span></div><div class="line"><span class="keyword">RUN</span><span class="bash"> sudo add-apt-repository \</span></div><div class="line">   <span class="string">"deb [arch=amd64] https://download.docker.com/linux/ubuntu \</span></div><div class="line">   <span class="variable">$(lsb_release -cs)</span> \</div><div class="line">   stable"</div><div class="line"></div><div class="line"><span class="keyword">RUN</span><span class="bash">  apt-get update &amp;&amp; sudo apt-get install -y docker-ce</span></div><div class="line"></div><div class="line"><span class="keyword">RUN</span><span class="bash"> mkdir -p /etc/systemd/system/docker.d</span></div><div class="line"><span class="keyword">COPY</span><span class="bash"> docker.conf /etc/systemd/system/docker.service.d/override.conf</span></div><div class="line"><span class="keyword">RUN</span><span class="bash"> systemctl <span class="built_in">enable</span> docker</span></div><div class="line"></div><div class="line"><span class="comment"># Clean rootfs</span></div><div class="line"><span class="keyword">RUN</span><span class="bash"> /usr/<span class="built_in">local</span>/sbin/scw-builder-leave</span></div></pre></td></tr></table></figure>
+<h4 id="base-de-l’image"><a href="#base-de-l’image" class="headerlink" title="base de l’image"></a>base de l’image</h4><p>Cette image dérive d’une image Ubuntu relativement récente (ici 16.10).</p>
+<p>Un choix plus conservateur serait Ubuntu 16.04 LTS (LTS pour Long Term Support).</p>
+<p>Notez qu’il est important de choisir une distribution ayant un noyau assez récent, car Docker s’appuie sur des fonctionnalités du noyau Linux qui se sont stabilisées que depuis peu, et évolue à la vitesse d’un cheval au galop.</p>
+<p>Une autre alternative, qui va au bout de la démarche de “conteneurisation”, serait de choisir un système d’exploitation reposant uniquement sur des conteneurs tels <a href="http://rancher.com/rancher-os" target="_blank" rel="external">rancherOS</a>, <a href="https://coreos.com" target="_blank" rel="external">CoreOS</a>, <a href="https://vmware.github.io/photon" target="_blank" rel="external">Photon</a> ou <a href="http://www.projectatomic.io" target="_blank" rel="external">Atomic</a>. Cela fera peut-être partie d’un prochain article. L’arrivée de <a href="https://blog.docker.com/2017/04/introducing-linuxkit-container-os-toolkit" target="_blank" rel="external">LinuxKit</a>, essayant d’être le dénominateur commun technique de ces initiatives, en est l’illustration.</p>
+<h4 id="description"><a href="#description" class="headerlink" title="description"></a>description</h4><p>Ce fichier Dockerfile comprend l’ajout des utilitaires nécessaires à l’ajout de la clé gpg de Docker, ainsi que le repository, puis l’installation du package <code>docker-ce</code> lui-même.</p>
+<p>Le fichier <code>docker.conf</code> est ajouté aussi pour surcharger la configuration par défaut de docker dans systemd (en ne définissant aucune option), afin de permettre de définir par la suite (<a href="/2017/04/29/2017-04-30-deployer-un-cluster-swarm-mode-sur-scaleway-via-terraform/">dans le troisième article</a>), via le fichier <code>/etc/docker/daemon.json</code> (fichier dont l’usage est maintenant recommandé par Docker), les différentes options du démon docker, dont les ports. </p>
+<p>Cette étape n’aurait pu être incluse dans l’image générée et donc dans ce Dockerfile, car nous incluons dans le fichier <code>/etc/docker/daemon.json</code> l’adresse IP privée du serveur crée, qui est dynamique.</p>
+<p><code>docker.conf</code> :</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">[Service]</div><div class="line">ExecStart=</div><div class="line">ExecStart=/usr/bin/dockerd</div></pre></td></tr></table></figure>
+<h3 id="lancer-la-creation-de-l’image"><a href="#lancer-la-creation-de-l’image" class="headerlink" title="lancer la création de l’image"></a>lancer la création de l’image</h3><p>exécuter la commande suivante pour créer l’image :<br><code>make image_on_local</code></p>
+<p>Après l’exécution de la commande précédente, Vous devriez voir votre nouvelle image (à la première ligne) dans <a href="https://cloud.scaleway.com/#/zones/par1/images" target="_blank" rel="external">la liste de celles disponibles</a>.<br>via la commande : </p>
+<p><code>scw images</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">REPOSITORY                  TAG                 IMAGE ID            CREATED             REGION              ARCH</div><div class="line">user/My_image               latest              667077c2            7 minutes           [     par1]         [x86_64]</div><div class="line">user/My_image_With_docker   latest              fd23ff8e            2 weeks             [     par1]         [x86_64]</div><div class="line">user/My_image_With_docker   latest              ecaf8b3b            2 weeks             [     par1]         [x86_64]</div><div class="line">Ubuntu_Yakkety              latest              d53fafe4            6 months            [ams1 par1]         [arm x86_64]</div><div class="line">Mattermost                  latest              0644b229            9 months            [ams1 par1]         [x86_64]</div><div class="line">Ubuntu_Xenial               latest              656de689            12 months           [ams1 par1]         [arm x86_64]</div></pre></td></tr></table></figure>
+<p>Votre image apparait avec 8 caractères, c’est-à-dire un identifiant tronqué (ici <code>667077c2</code>).</p>
+<p>Pour connaître l’identifiant complet, qui sera utilisé lors de la création des serveurs, exécutez la commande suivante :</p>
+<p><code>scw inspect 667077c2</code></p>
+<p>Celle-ci retourne :<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">[&#123;</div><div class="line">  &quot;id&quot;: &quot;667077c2-1d1b-465b-aff4-f22e58a61149&quot;,</div><div class="line">  &quot;name&quot;: &quot;My image&quot;,</div><div class="line">  &quot;creation_date&quot;: &quot;2017-04-22T22:39:56.884833+00:00&quot;,</div><div class="line">  &quot;modification_date&quot;: &quot;2017-04-22T22:39:56.884833+00:00&quot;,</div><div class="line">  &quot;root_volume&quot;: &#123;</div><div class="line">    &quot;id&quot;: &quot;d586f059-3c79-470a-9511-fffaad2a8406&quot;,</div><div class="line">    &quot;size&quot;: 50000000000,</div><div class="line">    &quot;name&quot;: &quot;x86_64-my-image-latest-2017-04-22_22:34&quot;,</div><div class="line">    &quot;volume_type&quot;: &quot;l_ssd&quot;</div><div class="line">  &#125;,</div><div class="line">  &quot;default_bootscript&quot;: &#123;</div><div class="line">    &quot;bootcmdargs&quot;: &quot;LINUX_COMMON ip=:::::eth0: boot=local&quot;, </div><div class="line">    &quot;initrd&quot;: &quot;http://169.254.42.24/initrd/initrd-Linux-x86_64-v3.12.4.gz&quot;,</div><div class="line">    &quot;kernel&quot;: &quot;http://169.254.42.24/kernel/x86_64-4.10.8-std-1/vmlinuz-4.10.8-std-1&quot;,</div><div class="line">    &quot;architecture&quot;: &quot;x86_64&quot;,</div><div class="line">    &quot;id&quot;: &quot;8fd15f37-c176-49a4-9e1d-10eb912942ea&quot;,</div><div class="line">    &quot;organization&quot;: &quot;11111111-1111-4111-8111-111111111111&quot;,</div><div class="line">    &quot;title&quot;: &quot;x86_64 4.10.8 std #1 (stable)&quot;,</div><div class="line">    &quot;public&quot;: true</div><div class="line">  &#125;,</div><div class="line">  &quot;organization&quot;: &quot;00000000-0000-5000-9000-000000000000&quot;,</div><div class="line">  &quot;arch&quot;: &quot;x86_64&quot;</div><div class="line">&#125;]</div></pre></td></tr></table></figure></p>
+<p>L’identifiant complet est donc <code>667077c2-1d1b-465b-aff4-f22e58a61149</code>.</p>
+<p>L’image est prête à être utilisée pour créer nos serveurs.</p>
+<h2 id="l’image-n’est-pas-securisee"><a href="#l’image-n’est-pas-securisee" class="headerlink" title="l’image n’est pas sécurisée"></a>l’image n’est pas sécurisée</h2><p>Veuillez noter que <strong>cette image n’est pas du tout sécurisée</strong>. En effet, la configuration SSH n’est pas durcie :</p>
+<p>Voici une liste non exhaustive des manquements quant à sa sécurisaition :</p>
+<ul>
+<li>la désactivation de l’authentification par mot de passe</li>
+<li>le changement de port SSH</li>
+<li>l’activation de la séparation des privilèges</li>
+<li>la désactivation des algorithmes faibles</li>
+<li>le ssh port knocking </li>
+<li>etc …</li>
+</ul>
+<p><a href="https://www.ssi.gouv.fr/guide/recommandations-pour-un-usage-securise-dopenssh/" target="_blank" rel="external">Une liste complète pourra être consultée sur le site de l’anssi</a>.</p>
+<p>De plus, des mécanismes de sécurité ne sont pas installés (<code>fail2ban</code> par exemple).</p>
+<p>Enfin, le fonctionnement des règles des groupes de sécurité réseau de Scaleway sont pour le moins particulières (ou j’ai loupé quelque chose) : </p>
+<p>Même si ces règles contiennent les plages IP depuis lesquels accepter le traffic (ici des IP internes 10.0.0.0/8 bien que cela ne nous prémunisse pas des autres clients Scaleway), les ports sont quand mêmes accessibles via l’extérieur….</p>
+<p>En bref, la mise en place dans l’image (ce qui n’est pas le cas ici), d’un pare-feu (<a href="https://doc.ubuntu-fr.org/ufw" target="_blank" rel="external">ufw</a>, ou directement netfilter par exemple), n’acceptant que des connexions des serveurs du cluster est nécessaire au delà des quelques  minutes de test de cet article.</p>
+<p>Je regrette de plus, que scaleway ne bénéficie pas du réseau privé disponible sur l’infrastructure de la maison mère online.net (appelé RPN).</p>
+<h1 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h1><p>La définition et la construction d’une image de serveur sont facilitées par les outils fournis par Scaleway, inspirés de ceux de Docker. Malheureusement, cette image ne sera pas utilisable directement chez d’autres hébergeurs. <a href="/2017/04/29/2017-04-30-deployer-un-cluster-swarm-mode-sur-scaleway-via-terraform/">Le  troisième et dernier article</a> réutilisera l’image créée ici, pour créer des serveurs et y déployer le cluster Docker Swarm Mode.</p>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/blog/blog/categories/docker/">docker</a>, <a href="/blog/blog/categories/docker/docker/">docker</a>, <a href="/blog/blog/categories/docker/docker/swarm-mode/">swarm mode</a>, <a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/">scaleway</a>, <a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/">terraform</a>, <a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/">devops</a>, <a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/ubuntu/">ubuntu</a>
+  </div>
+
+        
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Commentaires</h1>
+
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Recherche">
+    <input type="hidden" name="q" value="site:clescot.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Catégories</h3>
+  <ul class="entry">
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/">JDBC</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JEE/">JEE</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/">JSON</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/">TDD</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/">big data</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/">cli</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/">communication</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/communication/">communication</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/">concurrence</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/">debug</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/">debug</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/">devops</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/git/">git</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/guice/">guice</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/">hook</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/">intégration continue</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/jersey/">jersey</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/">jsp</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/">kafka</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/">kafkacat</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/">logback</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/">logs</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/">mesure</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/">multithread</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/">organisation</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/outil/">outil</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/">parallèle</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/">performance</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/">productivité</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/">push</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/">scaleway</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/">spring</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/">swarm mode</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/tag/">tag</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/">tempus-fugit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/">terraform</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/">testng</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/testrule/">testrule</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/tests/">tests</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/">thread-safe</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/ubuntu/">ubuntu</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/">variables</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/">web</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/">web</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+
+  
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 Charles Lescot
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/blog/js/jquery.imagesloaded.min.js"></script>
+<script src="/blog/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

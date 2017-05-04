@@ -1,0 +1,308 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Metrics, Pour Mesurer Efficacement Les Performances : Intégration Avec Spring Et Guice | Le blog de Charles Lescot.</title>
+  <meta name="author" content="Charles Lescot">
+  
+  <meta name="description" content="Blog sur Java, le web, et les méthodes agiles.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Metrics, Pour Mesurer Efficacement Les Performances : Intégration Avec Spring Et Guice"/>
+  <meta property="og:site_name" content="Le blog de Charles Lescot."/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/blog/favicon.png" rel="icon">
+  <link rel="alternate" href="/blog/atom.xml" title="Le blog de Charles Lescot." type="application/atom+xml">
+  <link rel="stylesheet" href="/blog/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/blog/">Le blog de Charles Lescot.</a></h1>
+  <h2><a href="/blog/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/blog/">Home</a></li>
+    
+      <li><a href="/blog/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-11T05:08:00.000Z"><a href="/blog/2013/10/11/2013-10-11-metrics-pour-mesurer-efficacement-les-performances-integration-avec-spring-et-guice/">11/10/13</a></time>
+      
+      
+  
+    <h1 class="title">Metrics, Pour Mesurer Efficacement Les Performances : Intégration Avec Spring Et Guice</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="Presentation-de-Metrics"><a href="#Presentation-de-Metrics" class="headerlink" title="Présentation de Metrics"></a>Présentation de Metrics</h1><p>Je vous propose dans cette série de 4 articles, de vous présenter la librairie <a href="https://github.com/codahale/metrics" target="_blank" rel="external">Metrics</a>,<br>initié par la société <a href="https://www.yammer.com/" target="_blank" rel="external">Yammer</a>.<br>Celle-ci permet de fournir des métriques au niveau applicatif et JVM.</p>
+<p>Ce troisième article, présente l’intégration de Metrics avec les librairies d’injection de dépendances Spring et Guice.</p>
+<h1 id="Metrics-avec-Spring-et-Guice"><a href="#Metrics-avec-Spring-et-Guice" class="headerlink" title="Metrics avec Spring et Guice"></a>Metrics avec Spring et Guice</h1><p><a href="/blog/2013/10/11/metrics-pour-mesurer-efficacement-les-performances-integration-avec-jee/">Le deuxième article</a> de cette série consacrée à Metrics, présentait une intégration “legacy” de Metrics dans une application JEE.</p>
+<p>Néanmoins, Il existe des librairies qui intègrent facilement Metrics à Spring ou Guice.<br>L’avantage de ces librairies, est qu’elles permettent de simplifier l’usage de Metrics, via des annotations.<br>Les applications utilisant maintenant principalement les containers d’injection de dépendances, votre configuration ressemblera plutôt à un des exemples présentés ci-après.</p>
+<h2 id="Avec-Spring"><a href="#Avec-Spring" class="headerlink" title="Avec Spring"></a>Avec Spring</h2><p>Une librairie tierce permet l’intégration facile de Metrics avec les applications utilisant Spring (cette librairie supporte, au moment où j’écris l’article, la version 3.x de Metrics, contrairement à la librairie intégrant Metrics et Guice).</p>
+<p>Au choix, soit la configuration via un fichier XML, soit par des annotations permet d’intégrer les deux librairies. Cette configuration nous permettra d’annoter nos classes hébergeant les métriques.</p>
+<p>Il faut rajouter la dépendance suivante à votre fichier maven <code>pom.xml</code> :<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.ryantenney.metrics<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>metrics-spring<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<h3 id="la-configuration-Spring-via-xml"><a href="#la-configuration-Spring-via-xml" class="headerlink" title="la configuration Spring via xml"></a>la configuration Spring via xml</h3><p>La configuration en xml, de l’intégration des deux librairies se fait comme suit :<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">beans</span> <span class="attr">xmlns</span>=<span class="string">"http://www.springframework.org/schema/beans"</span></span></div><div class="line">       <span class="attr">xmlns:xsi</span>=<span class="string">"http://www.w3.org/2001/XMLSchema-instance"</span></div><div class="line">       <span class="attr">xmlns:metrics</span>=<span class="string">"http://www.ryantenney.com/schema/metrics"</span></div><div class="line">       <span class="attr">xsi:schemaLocation</span>=<span class="string">"</span></div><div class="line">            http://www.springframework.org/schema/beans</div><div class="line">            http://www.springframework.org/schema/beans/spring-beans-3.2.xsd</div><div class="line">            http://www.ryantenney.com/schema/metrics</div><div class="line">            http://www.ryantenney.com/schema/metrics/metrics-3.0.xsd"&gt;</div><div class="line"></div><div class="line">    <span class="comment">&lt;!-- registry and reporters should be defined in only one context xml file --&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">metrics:metric-registry</span> <span class="attr">id</span>=<span class="string">"registry"</span> <span class="attr">name</span>=<span class="string">"springMetrics"</span> /&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">metrics:reporter</span> <span class="attr">type</span>=<span class="string">"console"</span> <span class="attr">metric-registry</span>=<span class="string">"registry"</span> <span class="attr">period</span>=<span class="string">"1m"</span> /&gt;</span></div><div class="line"></div><div class="line">    <span class="comment">&lt;!-- annotation-driven must be included in all context files --&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">metrics:annotation-driven</span> <span class="attr">metric-registry</span>=<span class="string">"registry"</span> /&gt;</span></div><div class="line"></div><div class="line">    <span class="comment">&lt;!-- beans --&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;/<span class="name">beans</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>Comme indiqué dans les commentaires du xml précédent (<a href="https://github.com/ryantenney/metrics-spring" target="_blank" rel="external">issu de la documentation du module d’intégration</a>), la déclaration du registre et des reporters doit être réalisée dans un seul fichier xml, tandis que la balise liée aux annotations doit être présente dans chaque fichier xml spring.</p>
+<h3 id="la-configuration-Spring-via-des-annotations"><a href="#la-configuration-Spring-via-des-annotations" class="headerlink" title="la configuration Spring via des annotations"></a>la configuration Spring via des annotations</h3><p>De façon alternative, l’intégration se réalise en javaConfig comme suit : </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="meta">@Configuration</span></div><div class="line"><span class="meta">@EnableMetrics</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpringConfiguringClass</span> <span class="keyword">extends</span> <span class="title">MetricsConfigurerAdapter</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> MetricRegistry <span class="title">getMetricRegistry</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> SharedMetricRegistries.getOrCreate(<span class="string">"springMetrics"</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configureReporters</span><span class="params">(MetricRegistry metricRegistry)</span> </span>&#123;</div><div class="line">        ConsoleReporter.forRegistry(registry)</div><div class="line">            .outputTo(output)</div><div class="line">            .build()</div><div class="line">            .start(<span class="number">1</span>, TimeUnit.MINUTES);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>Cette intégration permet de : </p>
+<ul>
+<li>créer les métriques sur les méthodes des beans via les annotations <code>@Timed</code>, <code>@Metered</code>, <code>@ExceptionMetered</code>, and <code>@Counted</code>.</li>
+<li>créer des jauges sur les membres des beans spring annotés avec <code>@Gauge</code></li>
+<li>injecter via spring les variables représentant les métriques via l’annotation <code>@InjectMetric</code></li>
+<li>insérer, dans le registre spécifique des healthchecks, toute classe étendant la classe <code>HealthCheck</code></li>
+<li>créer des reporters Metrics et les lier au cycle de vie de Spring</li>
+</ul>
+<p>Une fois l’intégration de Metrics via Spring réalisée, il devient très aisé via des annotations de rajouter des métriques à notre application. </p>
+<p>Exemple de classe annotée : </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyClass</span> </span>&#123;</div><div class="line">                <span class="meta">@Timed</span></div><div class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">timedMethod</span><span class="params">()</span></span>&#123;</div><div class="line">                &#125;</div><div class="line"></div><div class="line">                <span class="meta">@Metered</span></div><div class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">meteredMethod</span><span class="params">()</span> </span>&#123;</div><div class="line">				&#125;</div><div class="line"></div><div class="line">                <span class="meta">@Counted</span></div><div class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">countedMethod</span><span class="params">()</span> </span>&#123;</div><div class="line">                &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h2 id="Avec-Guice"><a href="#Avec-Guice" class="headerlink" title="Avec Guice"></a>Avec Guice</h2><p><a href="https://github.com/clescot/metrics-example" target="_blank" rel="external">l’application web exemple liée à cet article</a>, montre l’intégration de Metrics avec une application utilisant le framework d’injection de dépendances Guice.</p>
+<p>L’application utilise Metrics 3.0.1, via une librairie <code>metrics-guice</code> qui n’a pas encore de version stable (à l’heure où j’écris cette article) supportant Metrics 3.x. J’ai donc forké le repository de metrics-guice pour juste upgrader la dépendence de Metrics vers la version 3.0.1. <a href="https://github.com/clescot/metrics-guice" target="_blank" rel="external">Un repository metrics-guice dépendant de Metrics 3.0.1 a été crée pour cette occasion</a>.</p>
+<p>Classiquement, l’intégration de Guice dans une webapp se réalise via l’installation d’un servletListener étendant <code>GuiceServletContextListener</code>.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> com.clescot.rest;</div><div class="line"></div><div class="line"><span class="keyword">import</span> com.codahale.metrics.ConsoleReporter;</div><div class="line"><span class="keyword">import</span> com.codahale.metrics.JmxReporter;</div><div class="line"><span class="keyword">import</span> com.codahale.metrics.MetricRegistry;</div><div class="line"><span class="keyword">import</span> com.codahale.metrics.health.HealthCheckRegistry;</div><div class="line"><span class="keyword">import</span> com.codahale.metrics.servlets.HealthCheckServlet;</div><div class="line"><span class="keyword">import</span> com.codahale.metrics.servlets.MetricsServlet;</div><div class="line"><span class="keyword">import</span> com.google.inject.Guice;</div><div class="line"><span class="keyword">import</span> com.google.inject.Injector;</div><div class="line"><span class="keyword">import</span> com.google.inject.servlet.GuiceServletContextListener;</div><div class="line"><span class="keyword">import</span> com.palominolabs.metrics.guice.InstrumentationModule;</div><div class="line"></div><div class="line"><span class="keyword">import</span> javax.servlet.ServletContext;</div><div class="line"><span class="keyword">import</span> javax.servlet.ServletContextEvent;</div><div class="line"><span class="keyword">import</span> java.util.concurrent.TimeUnit;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">GuiceContextListener</span> <span class="keyword">extends</span> <span class="title">GuiceServletContextListener</span> </span>&#123;</div><div class="line"></div><div class="line"></div><div class="line">    <span class="keyword">private</span> ServletContext servletContext;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">contextInitialized</span><span class="params">(ServletContextEvent servletContextEvent)</span> </span>&#123;</div><div class="line">        servletContext = servletContextEvent.getServletContext();</div><div class="line">        <span class="keyword">super</span>.contextInitialized(servletContextEvent);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">protected</span> Injector <span class="title">getInjector</span><span class="params">()</span> </span>&#123;</div><div class="line"></div><div class="line">        Injector injector = Guice.createInjector(<span class="keyword">new</span> HealthCheckModule(), <span class="keyword">new</span> RESTModule(), <span class="keyword">new</span> InstrumentationModule(),</div><div class="line">                <span class="keyword">new</span> JDBCMetricsModule()</div><div class="line">        );</div><div class="line"></div><div class="line">        <span class="comment">//register registries in ServletContext</span></div><div class="line">        MetricRegistry metricRegistry = injector.getInstance(MetricRegistry.class);</div><div class="line">        HealthCheckRegistry healthCheckRegistry = injector.getInstance(HealthCheckRegistry.class);</div><div class="line">        servletContext.setAttribute(MetricsServlet.METRICS_REGISTRY, metricRegistry);</div><div class="line">        servletContext.setAttribute(HealthCheckServlet.HEALTH_CHECK_REGISTRY, healthCheckRegistry);</div><div class="line"></div><div class="line">        <span class="comment">//configure reporters</span></div><div class="line">        JmxReporter.forRegistry(metricRegistry).build().start();</div><div class="line">        ConsoleReporter.forRegistry(metricRegistry).build().start(<span class="number">10</span>, TimeUnit.SECONDS);</div><div class="line">        <span class="keyword">return</span> injector;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>Un HealthCheckModule a été crée :</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> com.clescot.rest;</div><div class="line"></div><div class="line"><span class="keyword">import</span> com.codahale.metrics.health.HealthCheck;</div><div class="line"><span class="keyword">import</span> com.google.inject.multibindings.Multibinder;</div><div class="line"><span class="keyword">import</span> com.google.inject.servlet.ServletModule;</div><div class="line"><span class="keyword">import</span> com.palominolabs.metrics.guice.servlet.AdminServletModule;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HealthCheckModule</span> <span class="keyword">extends</span> <span class="title">ServletModule</span></span>&#123;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">configureServlets</span><span class="params">()</span> </span>&#123;</div><div class="line">        install(<span class="keyword">new</span> AdminServletModule());</div><div class="line">        Multibinder&lt;HealthCheck&gt; healthChecksBinder = Multibinder.newSetBinder(binder(), HealthCheck.class);</div><div class="line">        healthChecksBinder.addBinding().to(DatabaseHealthCheck.class);</div><div class="line"></div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>Les deux autres modules (cf l<a href="https://github.com/clescot/metrics-example" target="_blank" rel="external">es sources de l’application exemple</a>) correspondent à : </p>
+<ul>
+<li>l’enregistrement des ressources REST dans Guice (<code>RESTModule</code>)</li>
+<li>la configuration de la base de données et son monitoring (<code>JDBCMetricsModule</code>)</li>
+<li>un module pour lier Metrics et Guice (<code>InstrumentationModule</code>). </li>
+</ul>
+<p>Vous noterez l’intégration d’un <code>JMXReporter</code>, et d’un <code>ConsoleReporter</code> dans cette configuration, qui envoie dans la sortie standard toutes les 10 secondes (à des fins de test), un descriptif des métriques.</p>
+<p>Les ressources REST créées et les servlets Metrics disponibles seront référencées dans le fichier <code>web.xml</code> (ou de façon alternative via des annotations pour des containers plus récents).</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">web-app</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">display-name</span>&gt;</span>Archetype Created Web Application<span class="tag">&lt;/<span class="name">display-name</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">listener</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">listener-class</span>&gt;</span>com.clescot.rest.GuiceContextListener<span class="tag">&lt;/<span class="name">listener-class</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">listener</span>&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;<span class="name">filter</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">filter-name</span>&gt;</span>guiceFilter<span class="tag">&lt;/<span class="name">filter-name</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">filter-class</span>&gt;</span>com.google.inject.servlet.GuiceFilter<span class="tag">&lt;/<span class="name">filter-class</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">filter</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">filter-mapping</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">filter-name</span>&gt;</span>guiceFilter<span class="tag">&lt;/<span class="name">filter-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">url-pattern</span>&gt;</span>/rest/*<span class="tag">&lt;/<span class="name">url-pattern</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">filter-mapping</span>&gt;</span></div><div class="line"></div><div class="line">    <span class="tag">&lt;<span class="name">servlet</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>AdminServlet<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-class</span>&gt;</span>com.codahale.metrics.servlets.AdminServlet<span class="tag">&lt;/<span class="name">servlet-class</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">load-on-startup</span>&gt;</span>1<span class="tag">&lt;/<span class="name">load-on-startup</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">servlet</span>&gt;</span></div><div class="line"></div><div class="line">    <span class="tag">&lt;<span class="name">servlet</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>healthcheck<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-class</span>&gt;</span>com.codahale.metrics.servlets.HealthCheckServlet<span class="tag">&lt;/<span class="name">servlet-class</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">load-on-startup</span>&gt;</span>1<span class="tag">&lt;/<span class="name">load-on-startup</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">servlet</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">servlet</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>ping<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-class</span>&gt;</span>com.codahale.metrics.servlets.PingServlet<span class="tag">&lt;/<span class="name">servlet-class</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">load-on-startup</span>&gt;</span>1<span class="tag">&lt;/<span class="name">load-on-startup</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">servlet</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">servlet</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>metrics<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-class</span>&gt;</span>com.codahale.metrics.servlets.MetricsServlet<span class="tag">&lt;/<span class="name">servlet-class</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">load-on-startup</span>&gt;</span>1<span class="tag">&lt;/<span class="name">load-on-startup</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">servlet</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">servlet</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>threads<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-class</span>&gt;</span>com.codahale.metrics.servlets.ThreadDumpServlet<span class="tag">&lt;/<span class="name">servlet-class</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">load-on-startup</span>&gt;</span>1<span class="tag">&lt;/<span class="name">load-on-startup</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">servlet</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">servlet-mapping</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>AdminServlet<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">url-pattern</span>&gt;</span>/admin<span class="tag">&lt;/<span class="name">url-pattern</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">servlet-mapping</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">servlet-mapping</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>healthcheck<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">url-pattern</span>&gt;</span>/admin/healthcheck<span class="tag">&lt;/<span class="name">url-pattern</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">servlet-mapping</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">servlet-mapping</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>ping<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">url-pattern</span>&gt;</span>/admin/ping<span class="tag">&lt;/<span class="name">url-pattern</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">servlet-mapping</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">servlet-mapping</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>metrics<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">url-pattern</span>&gt;</span>/admin/metrics<span class="tag">&lt;/<span class="name">url-pattern</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">servlet-mapping</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">servlet-mapping</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>threads<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">url-pattern</span>&gt;</span>/admin/threads<span class="tag">&lt;/<span class="name">url-pattern</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">servlet-mapping</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">web-app</span>&gt;</span></div></pre></td></tr></table></figure>
+<p>Les exemples de code d’une application Guice ayant ces annotations sont présents dans <a href="/blog/2013/10/11/metrics-pour-mesurer-efficacement-les-performances-integration-avec-JDBC-logback-et-jersey/">le dernier article</a> (les annotations sont portées par des ressources Jersey).</p>
+<h2 id="conclusion"><a href="#conclusion" class="headerlink" title="conclusion"></a>conclusion</h2><p>L’intégration de la librairie Metrics avec Spring ou Guice se réalise sans réelles difficultés majeures. <a href="/blog/2013/10/11/metrics-pour-mesurer-efficacement-les-performances-integration-avec-JDBC-logback-et-jersey/">Le dernier article de cette série, porte sur l’intégration de librairies tierces, comme Jersey, les drivers JDBC ou logback</a>.</p>
+<h2 id="References"><a href="#References" class="headerlink" title="Références"></a>Références</h2><ul>
+<li><a href="http://metrics.codahale.com/manual/core/" target="_blank" rel="external">Metrics</a></li>
+<li><a href="http://ryantenney.github.io/metrics-spring/" target="_blank" rel="external">Metrics-Spring</a></li>
+<li><a href="http://spring.io/" target="_blank" rel="external">Spring</a></li>
+<li><a href="http://code.google.com/p/google-guice/" target="_blank" rel="external">Guice</a></li>
+<li><a href="https://github.com/clescot/metrics-guice" target="_blank" rel="external">un repository Metrics-guice dépendant de Metrics 3.0.1</a></li>
+</ul>
+<ul>
+<li><a href="https://github.com/clescot/metrics-example" target="_blank" rel="external">application example liée à cette série d’articles</a></li>
+</ul>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/blog/blog/categories/performance/">performance</a>, <a href="/blog/blog/categories/performance/mesure/">mesure</a>, <a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a>, <a href="/blog/blog/categories/performance/mesure/metrique/spring/">spring</a>, <a href="/blog/blog/categories/performance/mesure/metrique/spring/guice/">guice</a>
+  </div>
+
+        
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Commentaires</h1>
+
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Recherche">
+    <input type="hidden" name="q" value="site:clescot.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Catégories</h3>
+  <ul class="entry">
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/">JDBC</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JEE/">JEE</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/">JSON</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/">TDD</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/">big data</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/">cli</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/">communication</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/communication/">communication</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/">concurrence</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/">debug</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/">debug</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/">devops</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/git/">git</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/guice/">guice</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/">hook</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/">intégration continue</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/jersey/">jersey</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/">jsp</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/">kafka</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/">kafkacat</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/">logback</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/">logs</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/">mesure</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/">multithread</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/">organisation</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/outil/">outil</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/">parallèle</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/">performance</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/">productivité</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/">push</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/">scaleway</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/">spring</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/">swarm mode</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/tag/">tag</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/">tempus-fugit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/">terraform</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/">testng</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/testrule/">testrule</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/tests/">tests</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/">thread-safe</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/ubuntu/">ubuntu</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/">variables</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/">web</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/">web</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+
+  
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 Charles Lescot
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/blog/js/jquery.imagesloaded.min.js"></script>
+<script src="/blog/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

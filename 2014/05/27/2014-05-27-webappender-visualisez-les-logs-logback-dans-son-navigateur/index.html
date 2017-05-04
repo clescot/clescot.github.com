@@ -1,0 +1,330 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Webappender : Pour Visualiser Les Logs Logback Dans Son Navigateur | Le blog de Charles Lescot.</title>
+  <meta name="author" content="Charles Lescot">
+  
+  <meta name="description" content="Blog sur Java, le web, et les méthodes agiles.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Webappender : Pour Visualiser Les Logs Logback Dans Son Navigateur"/>
+  <meta property="og:site_name" content="Le blog de Charles Lescot."/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/blog/favicon.png" rel="icon">
+  <link rel="alternate" href="/blog/atom.xml" title="Le blog de Charles Lescot." type="application/atom+xml">
+  <link rel="stylesheet" href="/blog/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/blog/">Le blog de Charles Lescot.</a></h1>
+  <h2><a href="/blog/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/blog/">Home</a></li>
+    
+      <li><a href="/blog/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2014-05-27T21:46:00.000Z"><a href="/blog/2014/05/27/2014-05-27-webappender-visualisez-les-logs-logback-dans-son-navigateur/">27/05/14</a></time>
+      
+      
+  
+    <h1 class="title">Webappender : Pour Visualiser Les Logs Logback Dans Son Navigateur</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>Cette série de deux articles décrit le fonctionnement de la librairie de visualisation de logs <a href="https://github.com/clescot/webappender" target="_blank" rel="external">webappender</a>. </p>
+<p>Le premier article expose sa mise en place, et les différentes façons de visualiser les logs suivant son navigateur.</p>
+<p>Le deuxième article décrit la façon de choisir le contenu et la taille des logs à afficher.</p>
+<h1 id="Le-probleme"><a href="#Le-probleme" class="headerlink" title="Le problème"></a>Le problème</h1><p>Pour des applications web, il est courant de d’effectuer la recette des fonctionnalités sur des serveurs <strong>distants</strong>.</p>
+<p> Quand un comportement non attendu survient, il est nécessaire de retracer le fonctionnement précis de l’application, notamment via l’inspection des traces applicatives aussi appelées logs.</p>
+<p>Le serveur étant distant, il est souvent nécessaire :</p>
+<ul>
+<li>de se connecter en ssh sur le bon serveur</li>
+<li>d’identifier le répertoire hébergeant les logs</li>
+<li>d’identifier le bon fichier de logs</li>
+<li>de démêler les logs correspondants à son test, des autres logs</li>
+</ul>
+<p>Ces opérations ne sont pas instantanées et rébarbatives. </p>
+<h1 id="Webappender"><a href="#Webappender" class="headerlink" title="Webappender"></a>Webappender</h1><p>Afin d’éviter toutes ses étapes, j’ai créer le webappender, afin que les traces serveur issues de vos requêtes HTTP arrivent directement dans votre navigateur.</p>
+<p>Ainsi, les autres logs des requêtes exécutées de façon concurrente sur le serveur, ne sont pas envoyées vers votre navigateur. Le développeur regarde donc <strong>uniquement</strong> les informations qui sont liées à son test.</p>
+<h1 id="Mise-en-place-dans-votre-application-web-JEE"><a href="#Mise-en-place-dans-votre-application-web-JEE" class="headerlink" title="Mise en place dans votre application web JEE"></a>Mise en place dans votre application web JEE</h1><h2 id="Pre-requis"><a href="#Pre-requis" class="headerlink" title="Pré-requis"></a>Pré-requis</h2><p>Webappender est compatible avec les applications <a href="http://en.wikipedia.org/wiki/Java_Platform,_Enterprise_Edition" target="_blank" rel="external">JEE</a> utilisant la librairie de logs <a href="http://logback.qos.ch" target="_blank" rel="external">logback</a>.<br>L’adhérence entre webappender et JEE est minime. Une compatibilité plus large est donc possible.</p>
+<h2 id="Installation-en-2-etapes"><a href="#Installation-en-2-etapes" class="headerlink" title="Installation en 2 étapes"></a>Installation en 2 étapes</h2><h3 id="Maven"><a href="#Maven" class="headerlink" title="Maven"></a>Maven</h3><p>Ajouter à votre fichier Maven <code>pom.xml</code> cette dépendance :</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.clescot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>webappender<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.4<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div></pre></td></tr></table></figure>
+<p>Notez qu’un filtre de servlet, installé par annotation, est fourni avec la librairie. Son <em>urlPatterns</em> correspond à toutes les requêtes (<code>/*</code>).</p>
+<h3 id="Activer-le-webappender"><a href="#Activer-le-webappender" class="headerlink" title="Activer le webappender"></a>Activer le webappender</h3><p>Par défaut, webappender est <strong>désactivé</strong> .</p>
+<p><strong>Permettre de visualiser les logs de chacun (par une interception du réseau), peut être très risqué et dangereux dans des environnements de production</strong>.</p>
+<p>Donc, pour prévenir toute erreur de configuration, nous désactivons par défaut le webappender.</p>
+<p>Pour l’activer, vous devez mettre ce paramètre sur la ligne de commande qui lance votre serveur d’applications :<br>    <code>-Dwebappender=true</code>.</p>
+<h1 id="Visualisation-des-logs"><a href="#Visualisation-des-logs" class="headerlink" title="Visualisation des logs"></a>Visualisation des logs</h1><p>La librairie webappender permet de visualiser les logs de sa requête dans tous les navigateurs.<br>Les visualisations de logs dans les configurations suivantes, impliquent une installation de webappender dans votre application JEE utilisant logback, avec un serveur d’applications java actif.</p>
+<h2 id="Vos-logs-dans-Chrome-via-ChromeLogger"><a href="#Vos-logs-dans-Chrome-via-ChromeLogger" class="headerlink" title="Vos logs dans Chrome via ChromeLogger"></a>Vos logs dans Chrome via ChromeLogger</h2><p>Vous devez installer le plugin chrome intitulé <a href="https://chrome.google.com/webstore/detail/chrome-logger/noaneddfkdjfnfdakjjmocngnfkfehhd" target="_blank" rel="external">ChromeLogger</a>.</p>
+<p>Malheureusement, <em>Chrome logger</em> ne transmet par défaut aucun header l’identifiant, contrairement à d’autres plugins.</p>
+<p>Or, Webappender transmet les logs à votre navigateur, quand les requêtes contiennent un header spécial : <code>X-ChromeLogger</code>.</p>
+<p>Pour réparer cela, vous devez installer une extension comme <a href="https://chrome.google.com/webstore/detail/modify-headers-for-google/innpjfdalfhpcoinfnehdnbkglpmogdi" target="_blank" rel="external">Modify Headers for Google Chrome</a>.</p>
+<p>Veuillez noter que cette extension envoie à chaque requête, <strong>que vous soyiez sur votre site web avec webappender ou non</strong>, les entêtes spécifiques que vous avez rajouté. La publication des entêtes spécifiques vers les serveurs est donc très large.</p>
+<p>Une alternative à <em>Modify Headers for Google Chrome</em>, est l’extension <a href="https://chrome.google.com/webstore/detail/modheader/idgpnmonknjnojddfkpgkljpfnnfcklj" target="_blank" rel="external">ModHeader</a>, qui permet <strong>par site</strong> de définir les headers à modifier ou rajouter.</p>
+<p><img src="/blog/images/modify_headers_chrome.png" alt="header à ajouter pour activer chrome logger"></p>
+<p>Quand l’installation et la configuration de cette nouvelle extension est effective, appuyez sur la touche <code>F12</code> de votre clavier, pour visualiser le panel <em>console</em> de Chrome. Cela vous montrera les logs engendrées par votre navigation sur la webapp. </p>
+<p><img src="/blog/images/chrome_logger2.png" alt="logs affichées dans la console chrome logger"></p>
+<p>Voici le détail de ce qu’une log contient : </p>
+<p><img src="/blog/images/capture_trace.png" alt="détail d&#39;une logs affichée dans la console chrome logger"></p>
+<h2 id="Vos-logs-dans-Firefox-via-FireLogger"><a href="#Vos-logs-dans-Firefox-via-FireLogger" class="headerlink" title="Vos logs dans Firefox via FireLogger"></a>Vos logs dans Firefox via FireLogger</h2><p>Vous devez installer le plugin firefox intitulé <a href="https://addons.mozilla.org/fr/firefox/addon/firelogger/" target="_blank" rel="external">FireLogger</a>.</p>
+<p>Quand cela est fait, appuyez sur la touche <code>F12</code>, pour visualiser le panneau firebug ; vous devriez voir un nouvel onglet intitulé <em>logger</em>.<br><img src="/blog/images/capture_firelogger.png" alt="logs affichées dans la console firelogger"></p>
+<p> Il vous montrera vos logs, suivant leur niveau. Les logs sont transmis à votre navigateur, quand les requêtes contiennnent une entête spéciale construite par le plugin ‘FireLogger’ : <code>X-FireLogger</code>.</p>
+<p><img src="/blog/images/capture_fire_logger_2.png" alt="détail de log dans la console firelogger"></p>
+<h2 id="Vos-logs-dans-n’importe-quel-navigateur"><a href="#Vos-logs-dans-n’importe-quel-navigateur" class="headerlink" title="Vos logs dans n’importe quel navigateur"></a>Vos logs dans n’importe quel navigateur</h2><p>Si vous ne pouvez ou ne voulez pas installer un plugin firefox ou chrome, ou si vous n’avez aucun de ces navigateurs, vous pouvez tout de même visualiser vos logs dans n’importe quel navigateur. Dans ce cas, vous devez configurer un <code>body formatter</code>.</p>
+<p>Pour cela, il faut :</p>
+<ul>
+<li>transmettre au serveur une entête spéciale : <code>X-BodyLogger</code>, via une extension comme <code>modify headers</code> (disponible sur chrome ou firefox), ou tout autre plugin compatible avec votre navigateur ayant la possibilité d’ajouter à façon une entête spéciale.</li>
+</ul>
+<p>Pour Internet Explorer, une solution gratuite comme <a href="http://www.telerik.com/fiddler" target="_blank" rel="external">Fiddler</a> permet de modifier les entêtes HTTP.</p>
+<p><img src="/blog/images/body_logger.png" alt="header HTTP activant un bodyformatter"></p>
+<ul>
+<li>installer au début de vos  JSP, la declaration de la taglib, et à la fin de vos JSP, le tag webappender. Si vous utilisez une librairie de templating (comme <code>sitemesh</code> par  example), une unique insertion dans un decorateur global aura un effet sur toutes vos JSP.</li>
+</ul>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="tag">&lt;<span class="name">%@</span> <span class="attr">page</span> <span class="attr">contentType</span>=<span class="string">"text/html;charset=UTF-8"</span> <span class="attr">language</span>=<span class="string">"java"</span> %&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">%@</span> <span class="attr">taglib</span> <span class="attr">prefix</span>=<span class="string">"debug"</span> <span class="attr">uri</span>=<span class="string">"https://github.com/clescot/webappender-tag"</span>%&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">head</span>&gt;</span></div><div class="line">   <span class="tag">&lt;<span class="name">title</span>&gt;</span>hello from test.jsp page<span class="tag">&lt;/<span class="name">title</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">head</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">body</span>&gt;</span></div><div class="line">test.jsp</div><div class="line"><span class="tag">&lt;/<span class="name">body</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">debug:webappender</span>/&gt;</span></div></pre></td></tr></table></figure>
+<p>Avantages de cette méthode :</p>
+<ul>
+<li>Les logs sont présentes dans le corps de la requête et non l’entête, (2Gb semble être la limite pour le corps d’une requête HTTP) ; il n’y a donc pas de réel problème de taille de logs</li>
+<li>cela fonctionne sur tous les navigateurs</li>
+</ul>
+<p>Inconvénients de cette méthode :</p>
+<ul>
+<li>cela modifie le corps de votre requête</li>
+<li>il n’y a pas de visualisation soignée de ces logs contrairement aux plugins présentés précédemment</li>
+<li>vous ne pouvez pas filtrer vos logs du côté navigateur</li>
+</ul>
+<h1 id="Test-avec-une-webapp-exemple"><a href="#Test-avec-une-webapp-exemple" class="headerlink" title="Test avec une webapp exemple"></a>Test avec une webapp exemple</h1><p>Vous pouvez tester l’application de démo, qui illustre les fonctionnalités de la librairie webappender.</p>
+<h3 id="Pre-requis-du-test"><a href="#Pre-requis-du-test" class="headerlink" title="Pré-requis du test"></a>Pré-requis du test</h3><ul>
+<li>client <a href="http://git-scm.com/" target="_blank" rel="external">git</a>.</li>
+<li><a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html" target="_blank" rel="external">java 7</a></li>
+<li><a href="http://maven.apache.org" target="_blank" rel="external">maven 3</a> ou supérieur</li>
+<li>un navigateur web</li>
+</ul>
+<h3 id="Installer-la-demo"><a href="#Installer-la-demo" class="headerlink" title="Installer la démo"></a>Installer la démo</h3><p>Tapez ces commandes dans votre terminal :<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">git <span class="built_in">clone</span> git@github.com:clescot/webappender.git</div><div class="line"><span class="built_in">cd</span> webappender/webappender-war-example</div><div class="line">mvn org.apache.tomcat.maven:tomcat7-maven-plugin:2.2:run-war -Dwebappender=<span class="literal">true</span></div></pre></td></tr></table></figure></p>
+<p>Aller à l’adresse suivante <code>http://127.0.0.1:8080/webappender</code> , et visualiser les logs en fonctions du navigateur choisi, et des entêtes transmises.</p>
+<h1 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h1><p>La librairie webappender, permet relativement simplement, de visualiser dans son navigateur, les logs générées par sa requête côté serveur.<br>Webappender peut être installée, sur des applications JEE utilisant logback. </p>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/blog/blog/categories/logback/">logback</a>, <a href="/blog/blog/categories/logback/web/">web</a>, <a href="/blog/blog/categories/logback/web/logs/">logs</a>, <a href="/blog/blog/categories/logback/web/logs/debug/">debug</a>, <a href="/blog/blog/categories/logback/web/logs/debug/communication/">communication</a>
+  </div>
+
+        
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Commentaires</h1>
+
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Recherche">
+    <input type="hidden" name="q" value="site:clescot.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Catégories</h3>
+  <ul class="entry">
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/">JDBC</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JEE/">JEE</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/">JSON</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/">TDD</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/">big data</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/">cli</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/">communication</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/communication/">communication</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/">concurrence</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/debug/">debug</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/">debug</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/">devops</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/git/">git</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/guice/">guice</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/">hook</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/">intégration continue</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/jersey/">jersey</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/">jsp</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/">junit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/">kafka</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/">kafkacat</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/">logback</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/logs/">logs</a><small>2</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/">mesure</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/">multithread</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/">métrique</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/">organisation</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/kafkacat/kafka/big-data/cli/outil/">outil</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/">parallèle</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/">performance</a><small>4</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/">productivité</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/">push</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/">scaleway</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/performance/mesure/metrique/spring/">spring</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/">swarm mode</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/java/tag/">tag</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/">tdd</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/">tempus-fugit</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/">terraform</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/junit/java/tdd/organisation/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/">test</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/">testng</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/testrule/">testrule</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/git/productivite/hook/push/integration-continue/TDD/tests/">tests</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/thread-safe/">thread-safe</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/docker/docker/swarm-mode/scaleway/terraform/devops/ubuntu/">ubuntu</a><small>3</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/">variables</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/debug/jsp/variables/communication/JSON/web/">web</a><small>1</small></li>
+  
+    <li><a href="/blog/blog/categories/logback/web/">web</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+
+  
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 Charles Lescot
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/blog/js/jquery.imagesloaded.min.js"></script>
+<script src="/blog/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>
