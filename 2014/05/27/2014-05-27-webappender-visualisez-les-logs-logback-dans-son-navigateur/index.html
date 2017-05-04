@@ -91,22 +91,22 @@
 <p>Pour réparer cela, vous devez installer une extension comme <a href="https://chrome.google.com/webstore/detail/modify-headers-for-google/innpjfdalfhpcoinfnehdnbkglpmogdi" target="_blank" rel="external">Modify Headers for Google Chrome</a>.</p>
 <p>Veuillez noter que cette extension envoie à chaque requête, <strong>que vous soyiez sur votre site web avec webappender ou non</strong>, les entêtes spécifiques que vous avez rajouté. La publication des entêtes spécifiques vers les serveurs est donc très large.</p>
 <p>Une alternative à <em>Modify Headers for Google Chrome</em>, est l’extension <a href="https://chrome.google.com/webstore/detail/modheader/idgpnmonknjnojddfkpgkljpfnnfcklj" target="_blank" rel="external">ModHeader</a>, qui permet <strong>par site</strong> de définir les headers à modifier ou rajouter.</p>
-<p><img src="/blog/images/modify_headers_chrome.png" alt="header à ajouter pour activer chrome logger"></p>
+<p><img src="/images/modify_headers_chrome.png" alt="header à ajouter pour activer chrome logger"></p>
 <p>Quand l’installation et la configuration de cette nouvelle extension est effective, appuyez sur la touche <code>F12</code> de votre clavier, pour visualiser le panel <em>console</em> de Chrome. Cela vous montrera les logs engendrées par votre navigation sur la webapp. </p>
-<p><img src="/blog/images/chrome_logger2.png" alt="logs affichées dans la console chrome logger"></p>
+<p><img src="/images/chrome_logger2.png" alt="logs affichées dans la console chrome logger"></p>
 <p>Voici le détail de ce qu’une log contient : </p>
-<p><img src="/blog/images/capture_trace.png" alt="détail d&#39;une logs affichée dans la console chrome logger"></p>
+<p><img src="/images/capture_trace.png" alt="détail d&#39;une logs affichée dans la console chrome logger"></p>
 <h2 id="Vos-logs-dans-Firefox-via-FireLogger"><a href="#Vos-logs-dans-Firefox-via-FireLogger" class="headerlink" title="Vos logs dans Firefox via FireLogger"></a>Vos logs dans Firefox via FireLogger</h2><p>Vous devez installer le plugin firefox intitulé <a href="https://addons.mozilla.org/fr/firefox/addon/firelogger/" target="_blank" rel="external">FireLogger</a>.</p>
-<p>Quand cela est fait, appuyez sur la touche <code>F12</code>, pour visualiser le panneau firebug ; vous devriez voir un nouvel onglet intitulé <em>logger</em>.<br><img src="/blog/images/capture_firelogger.png" alt="logs affichées dans la console firelogger"></p>
+<p>Quand cela est fait, appuyez sur la touche <code>F12</code>, pour visualiser le panneau firebug ; vous devriez voir un nouvel onglet intitulé <em>logger</em>.<br><img src="/images/capture_firelogger.png" alt="logs affichées dans la console firelogger"></p>
 <p> Il vous montrera vos logs, suivant leur niveau. Les logs sont transmis à votre navigateur, quand les requêtes contiennnent une entête spéciale construite par le plugin ‘FireLogger’ : <code>X-FireLogger</code>.</p>
-<p><img src="/blog/images/capture_fire_logger_2.png" alt="détail de log dans la console firelogger"></p>
+<p><img src="/images/capture_fire_logger_2.png" alt="détail de log dans la console firelogger"></p>
 <h2 id="Vos-logs-dans-n’importe-quel-navigateur"><a href="#Vos-logs-dans-n’importe-quel-navigateur" class="headerlink" title="Vos logs dans n’importe quel navigateur"></a>Vos logs dans n’importe quel navigateur</h2><p>Si vous ne pouvez ou ne voulez pas installer un plugin firefox ou chrome, ou si vous n’avez aucun de ces navigateurs, vous pouvez tout de même visualiser vos logs dans n’importe quel navigateur. Dans ce cas, vous devez configurer un <code>body formatter</code>.</p>
 <p>Pour cela, il faut :</p>
 <ul>
 <li>transmettre au serveur une entête spéciale : <code>X-BodyLogger</code>, via une extension comme <code>modify headers</code> (disponible sur chrome ou firefox), ou tout autre plugin compatible avec votre navigateur ayant la possibilité d’ajouter à façon une entête spéciale.</li>
 </ul>
 <p>Pour Internet Explorer, une solution gratuite comme <a href="http://www.telerik.com/fiddler" target="_blank" rel="external">Fiddler</a> permet de modifier les entêtes HTTP.</p>
-<p><img src="/blog/images/body_logger.png" alt="header HTTP activant un bodyformatter"></p>
+<p><img src="/images/body_logger.png" alt="header HTTP activant un bodyformatter"></p>
 <ul>
 <li>installer au début de vos  JSP, la declaration de la taglib, et à la fin de vos JSP, le tag webappender. Si vous utilisez une librairie de templating (comme <code>sitemesh</code> par  example), une unique insertion dans un decorateur global aura un effet sur toutes vos JSP.</li>
 </ul>
@@ -237,9 +237,9 @@
   
     <li><a href="/categories/kafkacat/">kafkacat</a><small>1</small></li>
   
-    <li><a href="/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
-  
     <li><a href="/categories/logback/">logback</a><small>2</small></li>
+  
+    <li><a href="/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
   
     <li><a href="/categories/logback/web/logs/">logs</a><small>2</small></li>
   
@@ -277,9 +277,9 @@
   
     <li><a href="/categories/docker/docker/swarm-mode/scaleway/terraform/">terraform</a><small>3</small></li>
   
-    <li><a href="/categories/tempus-fugit/junit/java/tdd/test/">test</a><small>1</small></li>
-  
     <li><a href="/categories/junit/java/tdd/organisation/test/">test</a><small>1</small></li>
+  
+    <li><a href="/categories/tempus-fugit/junit/java/tdd/test/">test</a><small>1</small></li>
   
     <li><a href="/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/">testng</a><small>1</small></li>
   
