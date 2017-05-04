@@ -106,3 +106,7 @@ gravatar_email: lescot.charles@gmail.com
 
 
 theme: light
+
+deploy:
+  type: git
+  repo: git@github.com:clescot/clescot.github.com.git
