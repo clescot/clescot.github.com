@@ -70,10 +70,10 @@
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.codahale.metrics<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>metrics-servlet<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div></pre></td></tr></table></figure>
 <p>Une fois cette dépendance installée, vous pouvez étendre le <code>InstrumentedFilterContextListener</code> pour vous faciliter la tâche comme suit : </p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> com.clescot.rest;</div><div class="line"></div><div class="line"><span class="keyword">import</span> com.codahale.metrics.MetricRegistry;</div><div class="line"><span class="keyword">import</span> com.codahale.metrics.servlet.InstrumentedFilterContextListener;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MetricsListener</span> <span class="keyword">extends</span> <span class="title">InstrumentedFilterContextListener</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> MetricRegistry METRIC_REGISTRY = <span class="keyword">new</span> MetricRegistry();</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">protected</span> MetricRegistry <span class="title">getMetricRegistry</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> METRIC_REGISTRY;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>L’installation de la classe MetricsListener effectuée dans votre fichier <code>web.xml</code> comme suit, vous pouvez utiliser les différentes métriques listées dans <a href="/2013/10/11/metrics-pour-mesurer-efficacement-les-performances-les-bases/">le premier article de cette série</a> (jauge, compteur, mesure, histogramme, timer etc…).</p>
+<p>L’installation de la classe MetricsListener effectuée dans votre fichier <code>web.xml</code> comme suit, vous pouvez utiliser les différentes métriques listées dans <a href="/2013/10/11/2013-10-11-metrics-pour-mesurer-efficacement-les-performances-les-bases">le premier article de cette série</a> (jauge, compteur, mesure, histogramme, timer etc…).</p>
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">...</div><div class="line">...</div><div class="line"> <span class="tag">&lt;<span class="name">listener</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">listener-class</span>&gt;</span>com.clescot.rest.MetricsListener<span class="tag">&lt;/<span class="name">listener-class</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">listener</span>&gt;</span></div><div class="line">...</div><div class="line">...</div></pre></td></tr></table></figure>
 <p>Veuillez noter que le module <code>metrics-servlet</code>, n’est pas à confondre avec <code>metrics-servlets</code> évoqué plus loin dans cet article.</p>
-<p>Une alternative, présentée dans <a href="/2013/10/11/metrics-pour-mesurer-efficacement-les-performances-integration-avec-spring-et-guice/">le troisième article de cette série</a>, est l’initialisation et l’injection du registre via un container d’injection de dépendances comme <a href="http://projects.spring.io/spring-framework/" target="_blank" rel="external">Spring</a> ou <a href="http://code.google.com/p/google-guice/" target="_blank" rel="external">Guice</a> (<a href="">l’application web exemple</a> utilise Guice). </p>
+<p>Une alternative, présentée dans <a href="/2013/10/11/2013-10-11-metrics-pour-mesurer-efficacement-les-performances-integration-avec-spring-et-guice">le troisième article de cette série</a>, est l’initialisation et l’injection du registre via un container d’injection de dépendances comme <a href="http://projects.spring.io/spring-framework/" target="_blank" rel="external">Spring</a> ou <a href="http://code.google.com/p/google-guice/" target="_blank" rel="external">Guice</a> (<a href="">l’application web exemple</a> utilise Guice). </p>
 <h3 id="Health-check"><a href="#Health-check" class="headerlink" title="Health check"></a>Health check</h3><p>Metrics permet aussi d’intégrer un système de “Health check”, afin de surveiller, via des appels du répartiteur de charge (<em>load-balancer</em>), les composants externes sur lesquels repose l’application, tels la base de données, ou le moteur de recherche par exemple.<br>Cela permet d’avoir une idée précise, de la fiabilité de ces composants, et donc de travailler sur la tolérance de l’application aux pannes de ceux-ci.</p>
 <p>Cette intégration est réalisée par le module maven intitulé <strong>metrics-healthchecks</strong>.<br>Rajoutez donc dans votre fichier maven <code>pom.xml</code>, la dépendance suivante : </p>
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.codahale.metrics<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>metrics-healthchecks<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div></pre></td></tr></table></figure>
@@ -112,7 +112,7 @@
 <li><code>Slf4jReporter</code>pour un export via la façade de log <code>SLF4J</code></li>
 <li><code>GraphiteReporter</code> pour stocker de façon scalable et pseudo temps-réel les métriques</li>
 </ul>
-<h1 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h1><p>L’intégration de Metrics dans une application JEE est aisée. Nous verrons dans <a href="/2013/10/11/metrics-pour-mesurer-efficacement-les-performances-integration-avec-spring-et-guice/">le prochain article de la série, une intégration facilitée via Spring ou Guice</a>.</p>
+<h1 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h1><p>L’intégration de Metrics dans une application JEE est aisée. Nous verrons dans <a href="/2013/10/11/2013-10-11-metrics-pour-mesurer-efficacement-les-performances-integration-avec-spring-et-guice">le prochain article de la série, une intégration facilitée via Spring ou Guice</a>.</p>
 <h2 id="References"><a href="#References" class="headerlink" title="Références"></a>Références</h2><ul>
 <li><a href="http://metrics.codahale.com/manual/core/" target="_blank" rel="external">Metrics</a></li>
 <li><a href="http://ryantenney.github.io/metrics-spring/" target="_blank" rel="external">Metrics-Spring</a></li>
@@ -186,9 +186,9 @@
   
     <li><a href="/categories/kafkacat/kafka/big-data/cli/">cli</a><small>1</small></li>
   
-    <li><a href="/categories/debug/jsp/variables/communication/">communication</a><small>1</small></li>
-  
     <li><a href="/categories/logback/web/logs/debug/communication/">communication</a><small>2</small></li>
+  
+    <li><a href="/categories/debug/jsp/variables/communication/">communication</a><small>1</small></li>
   
     <li><a href="/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/">concurrence</a><small>1</small></li>
   
@@ -212,9 +212,9 @@
   
     <li><a href="/categories/tempus-fugit/junit/java/">java</a><small>1</small></li>
   
-    <li><a href="/categories/debug/jsp/variables/communication/JSON/web/java/">java</a><small>1</small></li>
-  
     <li><a href="/categories/junit/java/">java</a><small>1</small></li>
+  
+    <li><a href="/categories/debug/jsp/variables/communication/JSON/web/java/">java</a><small>1</small></li>
   
     <li><a href="/categories/performance/mesure/metrique/JDBC/logback/jersey/">jersey</a><small>1</small></li>
   
@@ -228,9 +228,9 @@
   
     <li><a href="/categories/kafkacat/">kafkacat</a><small>1</small></li>
   
-    <li><a href="/categories/logback/">logback</a><small>2</small></li>
-  
     <li><a href="/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
+  
+    <li><a href="/categories/logback/">logback</a><small>2</small></li>
   
     <li><a href="/categories/logback/web/logs/">logs</a><small>2</small></li>
   
