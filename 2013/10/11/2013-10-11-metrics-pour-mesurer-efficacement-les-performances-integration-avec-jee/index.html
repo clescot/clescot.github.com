@@ -62,7 +62,7 @@
     <div class="entry">
       
         <h2 id="Presentation-de-Metrics"><a href="#Presentation-de-Metrics" class="headerlink" title="Présentation de Metrics"></a>Présentation de Metrics</h2><p>Je vous propose dans cette série de 4 articles, de vous présenter la librairie <a href="https://github.com/codahale/metrics" target="_blank" rel="external">Metrics</a>,<br>initié par la société <a href="https://www.yammer.com/" target="_blank" rel="external">Yammer</a>.<br>Celle-ci permet de fournir des métriques au niveau applicatif et JVM.</p>
-<p>Ce deuxième article, présente l’intégration de Metrics dans une application web JEE.<br>A noter que l’intégration proposée n’inclut pas, à des fins pédagogiques, une intégration facilitée via Spring ou Guice, comme c’est le cas dans <a href="/2013/10/11/2013-10-11-metrics-pour-mesurer-efficacement-les-performances-integration-avec-spring-guice-logback-et-jersey/">le troisième article de la série</a>.</p>
+<p>Ce deuxième article, présente l’intégration de Metrics dans une application web JEE.<br>A noter que l’intégration proposée n’inclut pas, à des fins pédagogiques, une intégration facilitée via Spring ou Guice, comme c’est le cas dans <a href="/2013/10/11/2013-10-11-metrics-pour-mesurer-efficacement-les-performances-integration-avec-spring-et-guice">le troisième article de la série</a>.</p>
 <h2 id="Integration-dans-une-webapp"><a href="#Integration-dans-une-webapp" class="headerlink" title="Intégration dans une webapp"></a>Intégration dans une webapp</h2><p><a href="https://github.com/clescot/metrics-example" target="_blank" rel="external">Un exemple d’application web monitoré avec Metrics</a> est fourni en complément de cet article.</p>
 <h3 id="Enregistrement-du-registre-Metrics-dans-le-scope-application"><a href="#Enregistrement-du-registre-Metrics-dans-le-scope-application" class="headerlink" title="Enregistrement du registre Metrics dans le scope application"></a>Enregistrement du registre Metrics dans le scope application</h3><p>Lors du démarrage de l’application JEE, il est nécessaire d’enregistrer dans le scope <strong>application</strong> (<em>i.e</em> le <em>servletContext</em>), le registre Metrics, pour qu’il soit disponible pour toutes les classes.<br>Nous utiliserons pour cette tâche, un <em>ContextListener</em>, qui est justement exécuté au démarrage de l’application.</p>
 <p>Pour faciliter le partage du registre, Metrics fournit un module de classes utilitaires pour les applications JEE, intitulé <code>metrics-servlet</code>.</p>
@@ -192,15 +192,15 @@
   
     <li><a href="/categories/tempus-fugit/junit/java/tdd/test/parallele/multithread/testng/concurrence/">concurrence</a><small>1</small></li>
   
-    <li><a href="/categories/logback/web/logs/debug/">debug</a><small>2</small></li>
-  
     <li><a href="/categories/debug/">debug</a><small>1</small></li>
+  
+    <li><a href="/categories/logback/web/logs/debug/">debug</a><small>2</small></li>
   
     <li><a href="/categories/docker/docker/swarm-mode/scaleway/terraform/devops/">devops</a><small>3</small></li>
   
-    <li><a href="/categories/docker/">docker</a><small>3</small></li>
-  
     <li><a href="/categories/docker/docker/">docker</a><small>3</small></li>
+  
+    <li><a href="/categories/docker/">docker</a><small>3</small></li>
   
     <li><a href="/categories/git/">git</a><small>1</small></li>
   
@@ -228,9 +228,9 @@
   
     <li><a href="/categories/kafkacat/">kafkacat</a><small>1</small></li>
   
-    <li><a href="/categories/logback/">logback</a><small>2</small></li>
-  
     <li><a href="/categories/performance/mesure/metrique/JDBC/logback/">logback</a><small>1</small></li>
+  
+    <li><a href="/categories/logback/">logback</a><small>2</small></li>
   
     <li><a href="/categories/logback/web/logs/">logs</a><small>2</small></li>
   
